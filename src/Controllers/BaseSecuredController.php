@@ -19,7 +19,7 @@ class BaseSecuredController extends BaseController
         // split to timestamp and signature
         $hdrs      = explode(':', $hdr);
         $method    = $hdrs[0];
-        $timestamp = $hdrs[1]; // in seconds
+        $tsField   = $hdrs[1]; // in seconds
         $signature = $hdrs[2]; // base64 encoded
 
         if ($method === 'hmac') {
@@ -28,7 +28,7 @@ class BaseSecuredController extends BaseController
 
             // sharedSecret is encoded to base64 before validation
             if (isset($sharedSecret)
-                && $this->isValidSignature($timestamp, base64_decode($signature), base64_encode($sharedSecret), $algo)) {
+                && $this->isValidSignature($tsField, base64_decode($signature), base64_encode($sharedSecret), $algo)) {
                 return;
             }
 

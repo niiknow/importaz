@@ -31,25 +31,38 @@ class BaseController
     }
 
     /**
-     * validate the signature of the timestamp
-     */
-    public function isValidSignature($timestamp, $signature, $sharedSecret, $algo = 'sha256')
-    {
-        $seconds_in_half_a_day = 12 * 60 * 60;
-        $older_than_half_a_day = $timestamp < (time() - $seconds_in_half_a_day);
-        if ($older_than_half_a_day) {
-            return false;
-        }
-
-        return (hash_hmac($algo, $timestamp, $sharedSecret) === $signature);
-    }
-
-    /**
      * get temp dir
      */
     public function getTempDir()
     {
         return trim($this->getOrDefault('TEMP', '../tmp/'), '/') . '/';
+    }
+
+    /**
+     * validate the signature of the timestamp
+     */
+    public function isValidSignature($tsField, $signature, $sharedSecret, $algo = 'sha256')
+    {
+        // $tsField is timestamp,validLength
+        $parts       = explode(',', $tsField);
+        $ts          = $parts[0];
+        $validLength = $parts[1];
+        if ($ts < (time() - $validLength)) {
+            var_dump($ts);
+            var_dump((time() - $validLength));
+
+            return false;
+        }
+
+        return (hash_hmac($algo, $tsField, $sharedSecret) === $signature);
+    }
+
+    /**
+     * generate signature
+     */
+    public function generateSignature($timestamp, $validLength, $sharedSecret, $algo = 'sha256')
+    {
+        return hash_hmac($algo, $timestamp . ',' . $validLength, $sharedSecret);
     }
 
     /**
