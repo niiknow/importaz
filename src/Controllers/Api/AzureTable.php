@@ -114,6 +114,8 @@ class AzureTable extends \Controllers\BaseController
             $errors[] = "items array is required";
         }
         $items = $postBody['items'];
+        $env   = $this->envId();
+        $rst   = ["tableName" => $workspace . $env . $tableName, "partitionKey" => $partitionKey, "body" => $postBody, "errors" => $errors];
 
         if (count($errors) <= 0) {
             // loop through post body
@@ -142,13 +144,13 @@ class AzureTable extends \Controllers\BaseController
                     }
                 }
 
-                $rowKey = $item['$rowKey'];
+                $rowKey = $item['rowKey'];
                 if (!preg_match('/[a-zA-Z0-9-_\.\~\,]+/', $rowKey)) {
                     $errors[] = "$i has invalid rowKey: $rowKey";
                 }
 
                 if (isset($item['delete'])) {
-                    $operations->addDeleteEntity($tableName, $partitionKey, $rowKey);
+                    $operations->addDeleteEntity($rst['tableName'], $partitionKey, $rowKey);
                 } else {
                     $entity = new Entity();
                     $entity->setPartitionKey($partitionKey);
@@ -159,7 +161,7 @@ class AzureTable extends \Controllers\BaseController
                             continue;
                         }
 
-                        if (!preg_match('/^[a-z][A-Za-z0-9]{2,62}$/', $key)) {
+                        if (!preg_match('/[a-zA-Z0-9-_\.\~\,]+/', $key)) {
                             $errors[] = "$i column name $key is invalid";
                             continue;
                         }
@@ -167,45 +169,46 @@ class AzureTable extends \Controllers\BaseController
                         $entity->addProperty($key, null, $value);
                     }
 
-                    $operations->addInsertOrMergeEntity($tableName, $entity);
+                    $operations->addInsertOrMergeEntity($rst['tableName'], $entity);
                 }
             }
         }
-        $env = $this->envId();
-        $rst = ["tableName" => $workspace . $env . $tableName, "partitionKey" => $partitionKey, "body" => $postBody, "errors" => $errors];
 
         if (count($errors) <= 0) {
             try {
                 $today = new \DateTime();
-                // user 00 to sort at top
-                $jobTable        = 'a00job' . $today->format('Ymd');
-                $jobPartitionKey = PHP_INT_MAX - time();
-                $rst["jobTable"] = $jobTable;
-                $rst["jobId"]    = $jobPartitionKey;
-                $jobMessage      = json_encode($rst);
 
-                // insert import data, must be < 640KB?
-                $jobEntity = new Entity();
-                $jobEntity->setPartitionKey($jobPartitionKey);
-                $jobEntity->setRowKey('queue');
-                $jobEntity->addProperty("Message", EdmType::STRING, $jobMessage);
-                $this->tableRestProxy($jobTable)->insertEntity($jobTable, $entity);
+                if (isset($postBody['notifyQueue'])) {
+                    // user 00 to sort at top
+                    $jobTable        = 'a00job' . $today->format('Ymd');
+                    $jobPartitionKey = str_pad((PHP_INT_MAX - time()) . "", 10, '0', STR_PAD_LEFT);
+                    $rst["jobTable"] = $jobTable;
+                    $rst["jobId"]    = $jobPartitionKey;
+                    $jobMessage      = json_encode($rst);
+
+                    // insert import data, must be < 640KB?
+                    $jobEntity = new Entity();
+                    $jobEntity->setPartitionKey($jobPartitionKey . '');
+                    $jobEntity->setRowKey($rst['tableName'] . "-" . $partitionKey);
+                    $jobEntity->addProperty("Message", null, $jobMessage);
+                    $this->tableRestProxy($jobTable)->insertEntity($jobTable, $jobEntity);
+                }
                 unset($rst['body']);
 
                 // perform actual insert
-                $this->tableRestProxy($rst->tableName)->batch($rst->tableName, $operations);
+                $this->tableRestProxy($rst['tableName'])->batch($operations);
 
                 // if this should trigger queue that handle webhooks
                 if (isset($postBody['notifyQueue'])) {
-                    $this->enqueue($postBody['notifyQueue'], $rst)
+                    $this->enqueue($postBody['notifyQueue'], $rst);
                 }
             } catch (ServiceException $e) {
                 // Handle exception based on error codes and messages.
                 // Error codes and messages are here:
                 // http://msdn.microsoft.com/library/azure/dd179438.aspx
-                $code          = $e->getCode();
-                $error_message = $e->getMessage();
-                $rst->errors[] = "$code: $error_message";
+                $code            = $e->getCode();
+                $error_message   = $e->getMessage();
+                $rst['errors'][] = "main $code: $error_message";
             }
         }
 
@@ -243,7 +246,15 @@ class AzureTable extends \Controllers\BaseController
     public function tableRestProxy($tableName)
     {
         $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
-        $proxy->createTableIfNotExists($tableName);
+        try {
+            // Create table if not exists.
+            $proxy->createTable($tableName);
+        } catch (ServiceException $e) {
+            $code            = $e->getCode();
+            $error_message   = $e->getMessage();
+            $rst['errors'][] = "createTable $code: $error_message";
+        }
+        $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
         return $proxy;
     }
 
@@ -254,20 +265,18 @@ class AzureTable extends \Controllers\BaseController
     {
         $proxy = ServicesBuilder::getInstance()->createQueueService($this->connectionString);
         try {
-            unset($rst['body']);
             $jobMessage = json_encode($rst);
 
-            // insert to notify queue
-            $builder = new ServicesBuilder();
-
             // error may occur if queue does not exists
-            $proxy->createMessage($queueName, $jobMessage);
+            // must base64 encode to ensure MS cloud
+            // storage explorer visibility
+            $proxy->createMessage($queueName, base64_encode($jobMessage));
         } catch (ServiceException $e) {
             // queue must be created ahead of time so it can be handled
             // otherwise, what is the point?
-            $code          = $e->getCode();
-            $error_message = $e->getMessage();
-            $rst->errors[] = "$code: $error_message";
+            $code            = $e->getCode();
+            $error_message   = $e->getMessage();
+            $rst['errors'][] = "enqueue $code: $error_message";
         }
     }
 }
