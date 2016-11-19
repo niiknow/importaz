@@ -180,8 +180,10 @@ class AzureTable extends \Controllers\BaseController
 
                 if (isset($postBody['notifyQueue'])) {
                     // user 00 to sort at top
-                    $jobTable        = 'a00job' . $today->format('Ymd');
-                    $jobPartitionKey = str_pad((PHP_INT_MAX - time()) . "", 10, '0', STR_PAD_LEFT);
+                    $jobTable = 'a00job' . $today->format('Ymd');
+
+                    // use a max number that is smaller than 32bit int to keep consistency
+                    $jobPartitionKey = str_pad((2000000000 - time()) . "", 10, '0', STR_PAD_LEFT);
                     $rst["jobTable"] = $jobTable;
                     $rst["jobId"]    = $jobPartitionKey;
                     $jobMessage      = json_encode($rst);
