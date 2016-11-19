@@ -14,7 +14,7 @@ class BaseController
     {
         $this->f3               = $f3;
         $this->params           = $params;
-        $this->connectionString = $f3->get('AzureStorageConnectionString');
+        $this->connectionString = $f3->get('db.azure_storage');
     }
 
     /**

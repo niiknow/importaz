@@ -132,7 +132,7 @@ class AzureTable extends \Controllers\BaseController
                     // convert ean or upc to rowKey
                     if (isset($item['ean'])) {
                         $item['rowKey'] = str_pad($item['ean'], 13, '0', STR_PAD_LEFT);
-                    } else if (isset($item['upc'])) {
+                    } elseif (isset($item['upc'])) {
                         $item['rowKey'] = str_pad($item['upc'], 13, '0', STR_PAD_LEFT);
                     }
 
@@ -190,21 +190,14 @@ class AzureTable extends \Controllers\BaseController
                 $jobEntity->setRowKey('queue');
                 $jobEntity->addProperty("Message", EdmType::STRING, $jobMessage);
                 $this->tableRestProxy($jobTable)->insertEntity($jobTable, $entity);
+                unset($rst['body']);
 
                 // perform actual insert
                 $this->tableRestProxy($rst->tableName)->batch($rst->tableName, $operations);
 
                 // if this should trigger queue that handle webhooks
-                if (isset($postBody['notify'])) {
-                    unset($rst['body']);
-                    $jobMessage = json_encode($rst);
-                    // insert to notify queue
-                    // queue must already exists
-                    $queueRestProxy = ServicesBuilder::getInstance()->createQueueService($connectionString);
-
-                    // Create message.
-                    $builder = new ServicesBuilder();
-                    $queueRestProxy->createMessage("notifyQueue", $jobMessage);
+                if (isset($postBody['notifyQueue'])) {
+                    $this->enqueue($postBody['notifyQueue'], $rst)
                 }
             } catch (ServiceException $e) {
                 // Handle exception based on error codes and messages.
@@ -212,7 +205,7 @@ class AzureTable extends \Controllers\BaseController
                 // http://msdn.microsoft.com/library/azure/dd179438.aspx
                 $code          = $e->getCode();
                 $error_message = $e->getMessage();
-                $rst->errors[] = '$code:$error_message';
+                $rst->errors[] = "$code: $error_message";
             }
         }
 
@@ -225,8 +218,10 @@ class AzureTable extends \Controllers\BaseController
      */
     public function envId()
     {
-        $env = $this->getOrDefault('app . env', 'dev');
-        $rst = '1';
+        $env = $this->getOrDefault('app.env', 'dev');
+
+        // use 3 to prevent system table conflict
+        $rst = '3';
         if ($env == 'dev') {
             return $rst . '1';
         } elseif ($env == 'tst') {
@@ -253,12 +248,26 @@ class AzureTable extends \Controllers\BaseController
     }
 
     /**
-     * get table rest body
+     * insert queue message
      */
-    public function queueRestProxy($queueName)
+    public function enqueue($queueName, $rst)
     {
         $proxy = ServicesBuilder::getInstance()->createQueueService($this->connectionString);
-        $proxy->createTableIfNotExists($queueName);
-        return $proxy;
+        try {
+            unset($rst['body']);
+            $jobMessage = json_encode($rst);
+
+            // insert to notify queue
+            $builder = new ServicesBuilder();
+
+            // error may occur if queue does not exists
+            $proxy->createMessage($queueName, $jobMessage);
+        } catch (ServiceException $e) {
+            // queue must be created ahead of time so it can be handled
+            // otherwise, what is the point?
+            $code          = $e->getCode();
+            $error_message = $e->getMessage();
+            $rst->errors[] = "$code: $error_message";
+        }
     }
 }
