@@ -1,0 +1,12 @@
+.DS_STORE
+.phpintel/
+.env
+vendor/
+*.lock
+*.log
+config/config.ini
+tmp/imageproxy/*.*
+tmp/cache/*.*
+tmp/logs/*.*
+tmp/images/*.*
+tmp/*.*
