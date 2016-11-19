@@ -18,6 +18,33 @@ class BaseController
     }
 
     /**
+     * Authenticate
+     */
+    public function beforeRoute()
+    {
+        $hdr = $_SERVER['X_AUTH_HMAC'];
+
+        // split to timestamp and signature
+        $hdrs      = explode(':', $hdr);
+        $timestamp = $hdrs[0];
+        $signature = $hdrs[1];
+    }
+
+    /**
+     * validate the signature of the timestamp
+     */
+    public function isValidSignature($timestamp, $signature, $sharedSecret, $algo = 'sha256')
+    {
+        $seconds_in_half_a_day = 12 * 60 * 60;
+        $older_than_half_a_day = $timestamp < (time() - $seconds_in_half_a_day);
+        if ($older_than_half_a_day) {
+            return false;
+        }
+
+        return (hash_hmac($algo, $timestamp, $sharedSecret) === $signature);
+    }
+
+    /**
      * get temp dir
      */
     public function getTempDir()

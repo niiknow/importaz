@@ -7,7 +7,7 @@ use MicrosoftAzure\Storage\Table\Models\BatchOperations;
 use MicrosoftAzure\Storage\Table\Models\Entity;
 use WindowsAzure\Common\ServicesBuilder;
 
-class AzureTable extends \Controllers\BaseController
+class AzureTable extends \Controllers\BaseSecuredController
 {
 
     /**
