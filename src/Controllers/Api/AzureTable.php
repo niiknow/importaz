@@ -113,10 +113,14 @@ class AzureTable extends \Controllers\BaseController
         if (!isset($postBody['items'])) {
             $errors[] = "items array is required";
         }
-        $items = $postBody['items'];
-        $env   = $this->envId();
-        $rst   = ["tableName" => $workspace . $env . $tableName, "partitionKey" => $partitionKey, "body" => $postBody, "errors" => $errors];
 
+        $items = $postBody['items'];
+        if (count($items) > 100) {
+            $errors[] = "expected items count to be less than 100 but got " . count($items);
+        }
+
+        $env = $this->envId();
+        $rst = ["tableName" => $workspace . $env . $tableName, "partitionKey" => $partitionKey, "body" => $postBody, "errors" => $errors];
         if (count($errors) <= 0) {
             // loop through post body
             foreach ($items as $i => $item) {
@@ -181,7 +185,7 @@ class AzureTable extends \Controllers\BaseController
                 if (isset($postBody['notifyQueue'])) {
                     if (count($items) > 1) {
                         // user 00 to sort at top
-                        $jobTable = 'a00job' . $today->format('Ymd');
+                        $jobTable = 'a10job' . $today->format('Ymd');
 
                         // use a max number that is smaller than 32bit int to keep consistency
                         $jobPartitionKey = str_pad((2000000000 - time()) . "", 10, '0', STR_PAD_LEFT);
