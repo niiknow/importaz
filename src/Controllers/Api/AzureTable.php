@@ -179,21 +179,25 @@ class AzureTable extends \Controllers\BaseController
                 $today = new \DateTime();
 
                 if (isset($postBody['notifyQueue'])) {
-                    // user 00 to sort at top
-                    $jobTable = 'a00job' . $today->format('Ymd');
+                    if (count($items) > 1) {
+                        // user 00 to sort at top
+                        $jobTable = 'a00job' . $today->format('Ymd');
 
-                    // use a max number that is smaller than 32bit int to keep consistency
-                    $jobPartitionKey = str_pad((2000000000 - time()) . "", 10, '0', STR_PAD_LEFT);
-                    $rst["jobTable"] = $jobTable;
-                    $rst["jobId"]    = $jobPartitionKey;
-                    $jobMessage      = json_encode($rst);
+                        // use a max number that is smaller than 32bit int to keep consistency
+                        $jobPartitionKey = str_pad((2000000000 - time()) . "", 10, '0', STR_PAD_LEFT);
+                        $rst["jobTable"] = $jobTable;
+                        $rst["jobId"]    = $jobPartitionKey;
+                        $jobMessage      = json_encode($rst);
 
-                    // insert import data, must be < 640KB?
-                    $jobEntity = new Entity();
-                    $jobEntity->setPartitionKey($jobPartitionKey . '');
-                    $jobEntity->setRowKey($rst['tableName'] . "-" . $partitionKey);
-                    $jobEntity->addProperty("Message", null, $jobMessage);
-                    $this->tableRestProxy($jobTable)->insertEntity($jobTable, $jobEntity);
+                        // insert import data, must be < 640KB?
+                        $jobEntity = new Entity();
+                        $jobEntity->setPartitionKey($jobPartitionKey . '');
+                        $jobEntity->setRowKey($rst['tableName'] . "-" . $partitionKey);
+                        $jobEntity->addProperty("Message", null, $jobMessage);
+                        $this->tableRestProxy($jobTable)->insertEntity($jobTable, $jobEntity);
+                    } else {
+                        $rst['item'] = $items[0];
+                    }
                 }
                 unset($rst['body']);
 
