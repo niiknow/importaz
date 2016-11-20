@@ -12,12 +12,12 @@ This is going to be really easy with Azure Storage Queue trigger integration on 
 
 * Secure API endpoint.
 Security is of utmost important.  We start with a very basic HMAC signing security.  This allow for easy integration on any Serverless platform.  Example: 
-1. We can insert some big file into s3.
-2. This trigger a lambda function to perform import.
-3. We split the file into multiple of 100 items and import each sequentially.
-4. Success result in an original-file-name-batch-n-of-x.log
-5. Failure result in filename-batch-n-of-x.err.  This file maybe queued up for retry at a later time.
-6. We have audit logs of our import.
+    1. We can insert some big file into s3.
+    2. This trigger a lambda function to perform import.
+    3. We split the file into multiple of 100 items and import each sequentially.
+    4. Success result in an original-file-name-batch-n-of-x.log
+    5. Failure result in filename-batch-n-of-x.err.  This file maybe queued up for retry at a later time.
+    6. We have audit logs of our import.
 
 * For future enhancements, we may build other microservices to handle better API Authentication.  We can simply use Firebase, Amazon Cognito with Lambda, or even Mashape Kong.
 
