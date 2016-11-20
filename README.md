@@ -56,21 +56,22 @@ https://github.com/niiknow/importaz/blob/master/config/routes-api.ini
 * @partitionKey - the partition key
 
 By convention, we introduced two additional parameter/features:
-1. workspace - the workspace name, default workspace name is 'a'.  You can achieve multi-tenancy by assigning your client a code and use workspace.
-2. environment - dev (31), tst (33), uat (35), stg (37), and prd (39).
+
+1. *workspace* - the workspace name, default workspace name is 'a'.  You can achieve multi-tenancy by assigning your client a code and use workspace.
+2. *environment* - dev (31), tst (33), uat (35), stg (37), and prd (39).
 
 POST BODY:
 ``` json
  { "items" : [...], "notifyQueue": "queueName", "useNamePrefix": true }
 ```
 
-Example, let say you have the following parameters: tableName ('products'), partitionKey ('main'), workspace ('acme'), environment ('prd').
+Example, let say you have the following parameters: @tableName ('products'), @partitionKey ('main'), @workspace ('acme'), @environment ('prd').
 
-Your destination table would be: acme39products
+Your destination table would be: *acme39products*
 
-All items will be imported into the "main" partition.  Item required one of the following fields: rowKey, id, ean, or upc.
+All items will be imported into the "main" partition.  All items (including *delete*) must include one of the following required fields: *rowKey*, *id*, *ean*, or *upc*.
 
-Item that you want to delete will have a property called "delete" set to true, date, or anything.
+To delete an item, include property called *delete* and set to true or anything.
 
 ### POST /api/table/csv/@tableName/@partitionKey
 POST a csv content to this endpoint to import.  First row must be header row.
