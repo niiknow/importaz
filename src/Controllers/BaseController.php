@@ -18,19 +18,6 @@ class BaseController
     }
 
     /**
-     * Authenticate
-     */
-    public function beforeRoute()
-    {
-        $hdr = $_SERVER['X_AUTH_HMAC'];
-
-        // split to timestamp and signature
-        $hdrs      = explode(':', $hdr);
-        $timestamp = $hdrs[0];
-        $signature = $hdrs[1];
-    }
-
-    /**
      * get temp dir
      */
     public function getTempDir()
@@ -41,20 +28,17 @@ class BaseController
     /**
      * validate the signature of the timestamp
      */
-    public function isValidSignature($tsField, $signature, $sharedSecret, $algo = 'sha256')
+    public function isValidSignature($tsField, $signatureBase64, $sharedSecret, $algo = 'sha256')
     {
         // $tsField is timestamp,validLength
-        $parts       = explode(',', $tsField);
+        $parts       = explode(",", $tsField);
         $ts          = $parts[0];
         $validLength = $parts[1];
         if ($ts < (time() - $validLength)) {
-            var_dump($ts);
-            var_dump((time() - $validLength));
-
             return false;
         }
-
-        return (hash_hmac($algo, $tsField, $sharedSecret) === $signature);
+        $key = $this->generateSignature($ts, $validLength, $sharedSecret, $algo);
+        return ($key === $signatureBase64);
     }
 
     /**
@@ -62,7 +46,7 @@ class BaseController
      */
     public function generateSignature($timestamp, $validLength, $sharedSecret, $algo = 'sha256')
     {
-        return hash_hmac($algo, $timestamp . ',' . $validLength, $sharedSecret);
+        return base64_encode(hash_hmac($algo, $timestamp . ',' . $validLength, $sharedSecret, true));
     }
 
     /**

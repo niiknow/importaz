@@ -28,7 +28,7 @@ class BaseSecuredController extends BaseController
 
             // sharedSecret is encoded to base64 before validation
             if (isset($sharedSecret)
-                && $this->isValidSignature($tsField, base64_decode($signature), base64_encode($sharedSecret), $algo)) {
+                && $this->isValidSignature($tsField, $signature, base64_encode($sharedSecret), $algo)) {
                 return;
             }
 

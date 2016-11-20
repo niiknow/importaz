@@ -18,7 +18,7 @@ class Index extends BaseController
             $time         = time();
             $validLength  = 60 * 60; // valid for 1 hours
             $sig          = $this->generateSignature($time, $validLength, base64_encode($sharedSecret), $algo);
-            echo 'hmac:' . $time . ',' . $validLength . ':' . base64_encode($sig);
+            echo 'hmac:' . $time . ',' . $validLength . ':' . $sig;
             return;
         }
 

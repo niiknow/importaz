@@ -21,8 +21,31 @@ class AzureTable extends \Controllers\BaseSecuredController
         $partitionKey = $params['partitionKey'];
         $tableName    = $params['tableName'];
         $workspace    = $f3->get('GET.workspace');
-        $rst          = $this->execTable($workspace, $tableName, $partitionKey, $postBody, $isDelete);
-        $this->json($rst);
+        $result       = [];
+        $errors       = [];
+        $count        = 0;
+        $transactions = [];
+
+        // making it possible to execute up to 1000 items
+        $items      = $postBody['items'];
+        $itemsCount = count($items);
+        if ($itemsCount <= 1000) {
+            $packages = floor($itemsCount / 100);
+            for ($i = 0; $i < $packages; $i++) {
+                $postBody["items"] = array_slice($items, $i * 100, 100);
+                $result            = $this->execTable($workspace, $tableName, $partitionKey, $postBody, $isDelete);
+                $transactions[]    = $result;
+                array_merge($errors, $result["errors"]);
+                $count += $result["count"];
+            }
+        } else {
+            $errors = ["expected items count to be less than 1001 but got " . $itemsCount];
+        }
+
+        $result["errors"] = $errors;
+        $result["count"]  = $count;
+        $result["trans"]  = $transactions;
+        $this->json($result);
     }
 
     /**
@@ -124,11 +147,12 @@ class AzureTable extends \Controllers\BaseSecuredController
         $env        = $this->envId();
         $namePrefix = $workspace . $env;
         $rst        = [
-            "tableName" => $namePrefix . $tableName
-            , "partitionKey" => $partitionKey
-            , "body" => $postBody
-            , "errors" => $errors
-            , "namePrefix" => $namePrefix,
+            "tableName"    => $namePrefix . $tableName,
+            "partitionKey" => $partitionKey,
+            "body"         => $postBody,
+            "errors"       => $errors,
+            "namePrefix"   => $namePrefix,
+            "count"        => $itemsCount,
         ];
 
         if (count($errors) <= 0) {
@@ -212,31 +236,34 @@ class AzureTable extends \Controllers\BaseSecuredController
                     } else {
                         $rst['item'] = $items[0];
                     }
-                    unset($rst['body']);
+                }
+                unset($rst['body']);
 
-                    // perform actual insert
-                    if (isset($rst['item'])) {
-                        // handle single insert
-                        $item = $rst['item'];
-                        if (isset($item['delete'])) {
-                            $this->tableRestProxy($rst['tableName'])
-                                ->deleteEntity($rst['tableName'], $partitionKey, $item['rowKey']);
-                        } else {
-                            $this->tableRestProxy($rst['tableName'])
-                                ->insertOrMergeEntity($rst['tableName'], $entity);
-                        }
+                // main action
+                if (isset($rst['item'])) {
+                    // handle single update
+                    $item = $rst['item'];
+
+                    if (isset($item['delete'])) {
+                        $this->tableRestProxy($rst['tableName'])
+                            ->deleteEntity($rst['tableName'], $partitionKey, $item['rowKey']);
                     } else {
-                        $this->tableRestProxy($rst['tableName'])->batch($operations);
+                        $this->tableRestProxy($rst['tableName'])
+                            ->insertOrMergeEntity($rst['tableName'], $entity);
                     }
-                    // if this should trigger queue that handle webhooks
-                    if (isset($postBody['notifyQueue'])) {
-                        // if useNamePrefix is set, then apply prefix to queue name
-                        $queueName = $postBody['notifyQueue'];
-                        if (isset($postBody['useNamePrefix'])) {
-                            $queueName = $rst['namePrefix'] . $queueName;
-                        }
-                        $this->enqueue($queueName, $rst);
+                } else {
+                    // handle multi-update
+                    $this->tableRestProxy($rst['tableName'])->batch($operations);
+                }
+
+                // if this should trigger queue that handle webhooks
+                if (isset($postBody['notifyQueue'])) {
+                    // if useNamePrefix is set, then apply prefix to queue name
+                    $queueName = $postBody['notifyQueue'];
+                    if (isset($postBody['useNamePrefix'])) {
+                        $queueName = $rst['namePrefix'] . $queueName;
                     }
+                    $this->enqueue($queueName, $rst);
                 }
             } catch (ServiceException $e) {
                 // Handle exception based on error codes and messages.
