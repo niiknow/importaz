@@ -48,6 +48,33 @@ curl -i -X POST -H "Content-Type: application/json" http://localhost:8888/api/ta
 }' -H "X_AUTH: hmac:timestamp_in_seconds,valid_duration_in_seconds:our_hmac_signature"
 ```
 
+## API explain
+https://github.com/niiknow/importaz/blob/master/config/routes-api.ini
+
+### POST /api/table/@tableName/@partitionKey?workspace=workspaceName
+* @tableName - the table to perform operation
+* @partitionKey - the partition key
+
+By convention, we introduced two additional parameter/features:
+1. workspace - the workspace name, default workspace name is 'a'.  You can achieve multi-tenancy by assigning your client a code and use workspace.
+2. environment - dev (31), tst (33), uat (35), stg (37), and prd (39).
+
+POST BODY:
+``` json
+ { "items" : [...], "notifyQueue": "queueName", "useNamePrefix": true }
+```
+
+Example, let say you have the following parameters: tableName ('products'), partitionKey ('main'), workspace ('acme'), environment ('prd').
+
+Your destination table would be: acme39products
+
+All items will be imported into the "main" partition.  Item required one of the following fields: rowKey, id, ean, or upc.
+
+Item that you want to delete will have a property called "delete" set to true, date, or anything.
+
+### POST /api/table/csv/@tableName/@partitionKey
+POST a csv content to this endpoint to import.  First row must be header row.
+
 ## Why? TLDR;
 1. Cloud - because we don't want to manage it
 2. High Performance - because we want to scale and would like to support multitenancy, someday.
