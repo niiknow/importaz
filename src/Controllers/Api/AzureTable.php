@@ -21,30 +21,41 @@ class AzureTable extends \Controllers\BaseSecuredController
         $partitionKey = $params['partitionKey'];
         $tableName    = $params['tableName'];
         $workspace    = $f3->get('GET.workspace');
-        $result       = [];
-        $errors       = [];
-        $count        = 0;
-        $transactions = [];
+        // $count        = 0;
+        $result       = array();
+        $errorCount   = 0;
+        $transactions = array();
 
         // making it possible to execute up to 1000 items
         $items      = $postBody['items'];
         $itemsCount = count($items);
         if ($itemsCount <= 1000) {
-            $packages = floor($itemsCount / 100);
+            $packages = ceil($itemsCount / 100);
             for ($i = 0; $i < $packages; $i++) {
                 $postBody["items"] = array_slice($items, $i * 100, 100);
-                $result            = $this->execTable($workspace, $tableName, $partitionKey, $postBody, $isDelete);
-                $transactions[]    = $result;
-                array_merge($errors, $result["errors"]);
-                $count += $result["count"];
+                $tran              = $this->execTable($workspace, $tableName, $partitionKey, $postBody, $isDelete);
+                $transactions[]    = $tran;
+                // $count += $result["count"];
+                $errorCount += count($tran["errors"]);
+                foreach ($tran as $k => $v) {
+                    $result[$k] = $v;
+                }
+                // some random wait so server can catch up
+                usleep(rand(10, 200));
             }
         } else {
             $errors = ["expected items count to be less than 1001 but got " . $itemsCount];
         }
 
-        $result["errors"] = $errors;
-        $result["count"]  = $count;
-        $result["trans"]  = $transactions;
+        unset($result["errors"]);
+        $result["errorCount"] = $errorCount;
+        // $result["total"]      = $count;
+        $result["count"] = $itemsCount;
+        $result["trans"] = $transactions;
+
+        if (isset($postBody["errorRows"])) {
+            $result["errorRows"] = $postBody["errorRows"];
+        }
         $this->json($result);
     }
 
@@ -63,8 +74,8 @@ class AzureTable extends \Controllers\BaseSecuredController
     public function csv()
     {
         $csvString = $this->f3->BODY;
-        $csv       = $this->csvToArray($csvString);
-        $this->execAction(["items" => $csv]);
+        $postBody  = $this->csvToArray($csvString);
+        $this->execAction($postBody);
     }
 
     /**
@@ -81,8 +92,10 @@ class AzureTable extends \Controllers\BaseSecuredController
         $data   = array();
         $lines  = explode("\n", $csvString);
         $i      = 0;
+        $errors = array();
 
         foreach ($lines as $line) {
+            $i = $i + 1;
             // fix product data issue
             $myLine = str_replace(", ", ";", $line);
             $myLine = str_replace(",", "|", $myLine);
@@ -92,11 +105,20 @@ class AzureTable extends \Controllers\BaseSecuredController
             if (!$header) {
                 $header = $values;
             } else {
-                $data[] = array_combine($header, $values);
+                if (count($header) !== count($values)) {
+                    /* ignore horribly bad data
+                    var_dump($header);
+                    var_dump($i);
+                    var_dump($values); */
+                    array_unshift($values, $i);
+                    $errors[] = join(",", $values);
+                } else {
+                    $data[] = array_combine($header, $values);
+                }
             }
         }
 
-        return $data;
+        return ["items" => $data, "errorRows" => join("\n", $errors)];
     }
 
     /**
