@@ -2,16 +2,19 @@
 We were looking for a cheap, low to no maintenance (cloud), and high performance document database that will notify you when a record has changed.  
 
 *Why?*
-1) Cloud - because we don't want to manage it
-2) High Performance - because we want to scale and would like to support multitenancy, someday.
-3) Cheap - because we want to help our client save $$$
-4) Bulk - quickly import data
-5) Notification - we need the ability to trigger, webhook, and possibly index on record change, and so on...
+1. Cloud - because we don't want to manage it
+2. High Performance - because we want to scale and would like to support multitenancy, someday.
+3. Cheap - because we want to help our client save $$$
+4. Bulk - quickly import data
+5. Notification - we need the ability to trigger, webhook, and possibly index on record change, and so on...
 
 There are so many BaaS out there that support this, such as Stamplay; but after witnessing how Parsed shutdown, we decided to limit our research to the big three Cloud Providers: Azure, AWS, and Google.  After much research, it was down to:
 
+
 AWS - SimpleDB and DynamoDB.
+
 Azure - Table Storage and DocumentDB.
+
 Google -  Bigtable, Firebase, and DataStore
 
 We ruled out DynamicDB, DocumentDB, Bigtable, and DataStore due to their cost running node/instance cost.  SimpleDB seem to be dead.  What left are Firebase and Azure Table Storage.  
@@ -68,3 +71,9 @@ curl -i -X POST -H "Content-Type: application/json" http://localhost:8888/api/ta
     }]
 }' -H "X_AUTH: hmac:timestamp_in_seconds,valid_duration_in_seconds:our_hmac_signature"
 ```
+
+#License
+
+MIT - Copyright © 2016 niiknow friends@niiknow.org
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
