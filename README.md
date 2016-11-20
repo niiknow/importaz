@@ -1,30 +1,6 @@
 # importaz
 We were looking for a cheap, low to no maintenance (cloud), and high performance document database that will notify you when a record has changed.  
 
-*Why?*
-1. Cloud - because we don't want to manage it
-2. High Performance - because we want to scale and would like to support multitenancy, someday.
-3. Cheap - because we want to help our client save $$$
-4. Bulk - quickly import data
-5. Notification - we need the ability to trigger, webhook, and possibly index on record change, and so on...
-
-There are so many BaaS out there that support this, such as Stamplay; but after witnessing how Parsed shutdown, we decided to limit our research to the big three Cloud Providers: Azure, AWS, and Google.  After much research, it was down to:
-
-
-AWS - SimpleDB and DynamoDB.
-
-Azure - Table Storage and DocumentDB.
-
-Google -  Bigtable, Firebase, and DataStore
-
-We ruled out DynamicDB, DocumentDB, Bigtable, and DataStore due to their cost running node/instance cost.  SimpleDB seem to be dead.  What left are Firebase and Azure Table Storage.  
-
-At first, Firebase seem to be great.  It provides a lot of features out of the box.  Since it's a live database, it can easily notify you on document changes.  It already have integration with Elastic Search by using Flashlight.  Unfortunately, research shows that it's kind of quirky and doesn't perform well on the server-side.  There are also report of performance issue even with a single tenant.  Through process of elimination, we're left with Azure Table Storage.
-
-We have not completely ruled out Firebase yet.  We loved the tight integration with authentication, authorization, and analytics.  We may use it in the front-end some day; but for now, we decided to work with Azure Table Storage.
-
-Along the way, we also looked at Cloudant by IBM.  One biggest advantage of Cloudant is that it has Elastic Search built-in.  It has potential but it's still a little on the high price range.  The lesson of Parsed is not about how small BaaS cannot survive.  Parsed was own by Facebook so they are not small.  It is about how you cannot bet on just one BaaS.  It requires this kind of research to record possible options, Cloudant or Firebase, if Azure Table Storage no longer work for us in the future.  
-
 # Goal
 This library aim to create a RESTful service endpoint to extend Azure Storage, especially Azure Table Storage.
 
@@ -71,6 +47,30 @@ curl -i -X POST -H "Content-Type: application/json" http://localhost:8888/api/ta
     }]
 }' -H "X_AUTH: hmac:timestamp_in_seconds,valid_duration_in_seconds:our_hmac_signature"
 ```
+
+## Why? TLDR;
+1. Cloud - because we don't want to manage it
+2. High Performance - because we want to scale and would like to support multitenancy, someday.
+3. Cheap - because we want to help our client save $$$
+4. Bulk - quickly import data
+5. Notification - we need the ability to trigger, webhook, and possibly index on record change, and so on...
+
+There are so many BaaS out there that support this, such as Stamplay; but after witnessing how Parsed shutdown, we decided to limit our research to the big three Cloud Providers: Azure, AWS, and Google.  After much research, it was down to:
+
+
+AWS - SimpleDB and DynamoDB.
+
+Azure - Table Storage and DocumentDB.
+
+Google -  Bigtable, Firebase, and DataStore
+
+We ruled out DynamicDB, DocumentDB, Bigtable, and DataStore due to their cost running node/instance cost.  SimpleDB seem to be dead.  What left are Firebase and Azure Table Storage.  
+
+At first, Firebase seem to be great.  It provides a lot of features out of the box.  Since it's a live database, it can easily notify you on document changes.  It already have integration with Elastic Search by using Flashlight.  Unfortunately, research shows that it's kind of quirky and doesn't perform well on the server-side.  There are also report of performance issue even with a single tenant.  Through process of elimination, we're left with Azure Table Storage.
+
+We have not completely ruled out Firebase yet.  We loved the tight integration with authentication, authorization, and analytics.  We may use it in the front-end some day; but for now, we decided to work with Azure Table Storage.
+
+Along the way, we also looked at Cloudant by IBM.  One biggest advantage of Cloudant is that it has Elastic Search built-in.  It has potential but it's still a little on the high price range.  The lesson of Parsed is not about how small BaaS cannot survive.  Parsed was own by Facebook so they are not small.  It is about how you cannot bet on just one BaaS.  It requires this kind of research to record possible options, Cloudant or Firebase, if Azure Table Storage no longer work for us in the future.  
 
 #License
 
