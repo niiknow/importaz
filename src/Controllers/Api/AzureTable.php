@@ -114,13 +114,16 @@ class AzureTable extends \Controllers\BaseSecuredController
             $errors[] = "items array is required";
         }
 
-        $items = $postBody['items'];
-        if (count($items) > 100) {
-            $errors[] = "expected items count to be less than 100 but got " . count($items);
+        $items      = $postBody['items'];
+        $itemsCount = count($items);
+        if ($itemsCount > 100) {
+            $errors[] = "expected items count to be less than 100 but got " . $itemsCount;
         }
 
-        $env = $this->envId();
-        $rst = ["tableName" => $workspace . $env . $tableName, "partitionKey" => $partitionKey, "body" => $postBody, "errors" => $errors];
+        $entity     = null;
+        $env        = $this->envId();
+        $namePrefix = $workspace . $env;
+        $rst        = ["tableName" => $namePrefix . $tableName, "partitionKey" => $partitionKey, "body" => $postBody, "errors" => $errors, "namePrefix" => $namePrefix];
         if (count($errors) <= 0) {
             // loop through post body
             foreach ($items as $i => $item) {
@@ -183,7 +186,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                 $today = new \DateTime();
 
                 if (isset($postBody['notifyQueue'])) {
-                    if (count($items) > 1) {
+                    if ($itemsCount > 1) {
                         // user 00 to sort at top
                         $jobTable = 'a10job' . $today->format('Ymd');
 
@@ -206,87 +209,104 @@ class AzureTable extends \Controllers\BaseSecuredController
                 unset($rst['body']);
 
                 // perform actual insert
-                $this->tableRestProxy($rst['tableName'])->batch($operations);
-
+                if (isset($rst['item'])) {
+                    // handle single insert
+                    $item = $rst['item'];
+                    if (isset($item['delete'])) {
+                        $this->tableRestProxy($rst['tableName'])
+                            ->deleteEntity($rst['tableName'], $partitionKey, $item['rowKey']);
+                    } else {
+                        $this->tableRestProxy($rst['tableName'])
+                            ->insertOrMergeEntity($rst['tableName'], $entity);
+                    }
+                } else {
+                    $this->tableRestProxy($rst['tableName'])->batch($operations);
+                }
                 // if this should trigger queue that handle webhooks
                 if (isset($postBody['notifyQueue'])) {
-                    $this->enqueue($postBody['notifyQueue'], $rst);
+                    // if useNamePrefix is set, then apply prefix to queue name
+                    $queueName = $postBody['notifyQueue'];
+                    if (isset($postBody['useNamePrefix'])) {
+                        $queueName = $rst['namePrefix'] . $queueName;
+                    }
+                    $this->enqueue($queueName, $rst);
                 }
-            } catch (ServiceException $e) {
-                // Handle exception based on error codes and messages.
-                // Error codes and messages are here:
-                // http://msdn.microsoft.com/library/azure/dd179438.aspx
-                $code            = $e->getCode();
-                $error_message   = $e->getMessage();
-                $rst['errors'][] = "main $code: $error_message";
             }
-        }
-
-        return $rst;
-    }
-
-    /**
-     * get two digit that identify the environment
-     * @return string
-     */
-    public function envId()
-    {
-        $env = $this->getOrDefault('app.env', 'dev');
-
-        // use 3 to prevent system table conflict
-        $rst = '3';
-        if ($env == 'dev') {
-            return $rst . '1';
-        } elseif ($env == 'tst') {
-            return $rst . '3';
-        } elseif ($env == 'uat') {
-            return $rst . '5';
-        } elseif ($env == 'stg') {
-            return $rst . '7';
-        } elseif ($env == 'prd') {
-            return $rst . '9';
-        }
-
-        return $rst . '0';
-    }
-
-    /**
-     * get table rest body
-     */
-    public function tableRestProxy($tableName)
-    {
-        $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
-        try {
-            // Create table if not exists.
-            $proxy->createTable($tableName);
         } catch (ServiceException $e) {
+            // Handle exception based on error codes and messages.
+            // Error codes and messages are here:
+            // http://msdn.microsoft.com/library/azure/dd179438.aspx
             $code            = $e->getCode();
             $error_message   = $e->getMessage();
-            $rst['errors'][] = "createTable $code: $error_message";
-        }
-        $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
-        return $proxy;
-    }
-
-    /**
-     * insert queue message
-     */
-    public function enqueue($queueName, $rst)
-    {
-        $proxy = ServicesBuilder::getInstance()->createQueueService($this->connectionString);
-        try {
-            $jobMessage = json_encode($rst);
-
-            // error may occur if queue does not exists
-            // must base64 encode to ensure MS cloud
-            // storage explorer visibility
-            $proxy->createMessage($queueName, base64_encode($jobMessage));
-        } catch (ServiceException $e) {
-            // queue must be created ahead of time so it can be handled
-            // otherwise, what is the point?
-            $code            = $e->getCode();
-            $error_message   = $e->getMessage();
-            $rst['errors'][] = "enqueue $code: $error_message";
+            $rst['errors'][] = "main $code: $error_message";
         }
     }
+
+    return $rst;
+}
+
+/**
+ * get two digit that identify the environment
+ * @return string
+ */
+function envId()
+{
+    $env = $this->getOrDefault('app.env', 'dev');
+
+    // use 3 to prevent system table conflict
+    $rst = '3';
+    if ($env == 'dev') {
+        return $rst . '1';
+    } elseif ($env == 'tst') {
+        return $rst . '3';
+    } elseif ($env == 'uat') {
+        return $rst . '5';
+    } elseif ($env == 'stg') {
+        return $rst . '7';
+    } elseif ($env == 'prd') {
+        return $rst . '9';
+    }
+
+    return $rst . '0';
+}
+
+/**
+ * get table rest body
+ */
+function tableRestProxy($tableName)
+{
+    $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
+    try {
+        // Create table if not exists.
+        $proxy->createTable($tableName);
+    } catch (ServiceException $e) {
+        $code            = $e->getCode();
+        $error_message   = $e->getMessage();
+        $rst['errors'][] = "createTable $code: $error_message";
+    }
+    $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
+    return $proxy;
+}
+
+/**
+ * insert queue message
+ */
+function enqueue($queueName, $rst)
+{
+    $proxy = ServicesBuilder::getInstance()->createQueueService($this->connectionString);
+    try {
+        $jobMessage = json_encode($rst);
+
+        // error may occur if queue does not exists
+        // must base64 encode to ensure MS cloud
+        // storage explorer visibility
+        $proxy->createMessage($queueName, base64_encode($jobMessage));
+    } catch (ServiceException $e) {
+        // queue must be created ahead of time so it can be handled
+        // otherwise, what is the point?
+        $code            = $e->getCode();
+        $error_message   = $e->getMessage();
+        $rst['errors'][] = "enqueue $code: $error_message";
+    }
+}
 }
