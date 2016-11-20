@@ -123,7 +123,14 @@ class AzureTable extends \Controllers\BaseSecuredController
         $entity     = null;
         $env        = $this->envId();
         $namePrefix = $workspace . $env;
-        $rst        = ["tableName" => $namePrefix . $tableName, "partitionKey" => $partitionKey, "body" => $postBody, "errors" => $errors, "namePrefix" => $namePrefix];
+        $rst        = [
+            "tableName" => $namePrefix . $tableName
+            , "partitionKey" => $partitionKey
+            , "body" => $postBody
+            , "errors" => $errors
+            , "namePrefix" => $namePrefix,
+        ];
+
         if (count($errors) <= 0) {
             // loop through post body
             foreach ($items as $i => $item) {
