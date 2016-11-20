@@ -1,14 +1,13 @@
 # importaz
-We were looking for a cheap, low to no maintenance (cloud), and high performance document database that will notify you when a record has changed.  
+We were looking for a cheap, low to no-maintenance (cloud), and high performance document database that will notify you when a record has changed.  
 
 # Goal
 This library aim to create a RESTful service endpoint to extend Azure Storage, especially Azure Table Storage.
 
-* Ability to CRUD and perform BULK of Azure Table Storage in a single method.
-We struggle with this at the beginning, but after much considerations, we realized that we don't really need/want to import very large amount of records.  Since we would like to notify all changes, having large bulk import make it harder to notify changes down the road.
+* Ability to CRUD and perform BULK of Azure Table Storage in a single method.  Azure Table Storage BULK limit you to only 100 records batch.  We struggled with this at the beginning, but after much considerations, we realized that we don't need/want to import very large amount of records.  Since we would like to notify all changes, having large bulk import will be harder to work with down the road.
 
 * Ability to notify record change with Azure Storage Queue.
-This is going to be really easy with Azure Storage Queue trigger integration on Azure Cloud Functions.
+This is going to be really easy since Azure Storage Queue can trigger Azure Cloud Functions.
 
 * Secure API endpoint.
 Security is of utmost important.  We start with a very basic HMAC signing security.  This allow for easy integration on any Serverless platform.  Example: 
@@ -57,15 +56,15 @@ https://github.com/niiknow/importaz/blob/master/config/routes-api.ini
 
 By convention, we introduced two additional parameter/features:
 
-1. *workspace* - the workspace name, default workspace name is 'a'.  You can achieve multi-tenancy by assigning your client a code and use workspace.
-2. *environment* - we use number to identify environments: dev (31), tst (33), uat (35), stg (37), and prd (39).  This reserved a00-a29 for internal table naming.  These tables would, obviously, be sorted at the top.
+1. *workspace* - the workspace name, default workspace name is 'a'.  You can achieve multi-tenancy by assigning your client a code and then use this code as your workspace value.
+2. *environment* - we use number to identify environments: dev (31), tst (33), uat (35), stg (37), and prd (39).  This reserved a00-a29 for internal table naming.  These tables would, obviously, be sorted at the top.  Environment can be setup in a file called config/config.ini, which has example and documenation here (https://github.com/niiknow/importaz/blob/master/config/config.example.ini) 
 
 POST BODY:
 ``` json
  { "items" : [...], "notifyQueue": "queueName", "useNamePrefix": true }
 ```
 
-Example, let say you have the following parameters: @tableName ('products'), @partitionKey ('main'), @workspace ('acme'), @environment ('prd').
+Example, let say you have the following parameters: @tableName ('products'), @partitionKey ('main'), @workspace ('acme'), and @environment ('prd').
 
 Your destination table would be: *acme39products*
 
@@ -74,7 +73,7 @@ All items will be imported into the "main" partition.  All items (including *del
 To delete an item, include property called *delete* and set to true or anything.
 
 ### POST /api/table/csv/@tableName/@partitionKey
-POST a csv content to this endpoint to import.  First row must be header row.
+POST a CSV content to this endpoint to import.  First row must be header row.  The CSV content will be converted to the *items* array and POST to the previous endpoint.
 
 ## Why? TLDR;
 1. Cloud - because we don't want to manage it
@@ -83,8 +82,7 @@ POST a csv content to this endpoint to import.  First row must be header row.
 4. Bulk - quickly import data
 5. Notification - we need the ability to trigger, webhook, and possibly index on record change, and so on...
 
-There are so many BaaS out there that support this, such as Stamplay; but after witnessing how Parsed shutdown, we decided to limit our research to the big three Cloud Providers: Azure, AWS, and Google.  After much research, it was down to:
-
+There are so many BaaS out there that support this, such as Stamplay; but after witnessing Parsed shutdown, we decided to limit our research to the  three big Cloud Providers: Azure, AWS, and Google.  This result in the following options:
 
 AWS - SimpleDB and DynamoDB.
 
@@ -92,13 +90,15 @@ Azure - Table Storage and DocumentDB.
 
 Google -  Bigtable, Firebase, and DataStore
 
-We ruled out DynamicDB, DocumentDB, Bigtable, and DataStore due to their cost running node/instance cost.  SimpleDB seem to be dead.  What left are Firebase and Azure Table Storage.  
+We ruled out DynamicDB, DocumentDB, Bigtable, and DataStore due to their  running node/instance cost.  SimpleDB seem to be dead.  What left are Firebase and Azure Table Storage.  
 
-At first, Firebase seem to be great.  It provides a lot of features out of the box.  Since it's a live database, it can easily notify you on document changes.  It already have integration with Elastic Search by using Flashlight.  Unfortunately, research shows that it's kind of quirky and doesn't perform well on the server-side.  There are also report of performance issue even with a single tenant.  Through process of elimination, we're left with Azure Table Storage.
+At first, Firebase seem to be great.  It provides a lot of features out of the box.  Since it's a live database, it can easily notify you on document changes.  It already have integration with Elastic Search by using Flashlight.  Unfortunately, research shows that it's kind of quirky and doesn't perform well on the server-side.  There are also report of performance issue even on a single tenant.  Through process of elimination, we're left with Azure Table Storage.
 
 We have not completely ruled out Firebase yet.  We loved the tight integration with authentication, authorization, and analytics.  We may use it in the front-end some day; but for now, we decided to work with Azure Table Storage.
 
-Along the way, we also looked at Cloudant by IBM.  One biggest advantage of Cloudant is that it has Elastic Search built-in.  It has potential but it's still a little on the high price range.  The lesson of Parsed is not about how small BaaS cannot survive.  Parsed was own by Facebook so they are not small.  It is about how you cannot bet on just one BaaS.  It requires this kind of research to record possible options, Cloudant or Firebase, if Azure Table Storage no longer work for us in the future.  
+Along the way, we also looked at Cloudant by IBM.  The biggest advantage of Cloudant is that it has Elastic Search built-in.  It has alot of potentials but it's also little known and is on the high price range.  
+
+The lesson of Parsed is not about how small BaaS cannot survive.  Parsed was actually not small, but was quite the opposite because it was backed by Facebook.  The lesson was about how you cannot bet on just one BaaS.  It requires this kind of research to record possible options, Cloudant or Firebase, if Azure Table Storage no longer work for us in the future.  
 
 #License
 
