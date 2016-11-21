@@ -57,7 +57,7 @@ https://github.com/niiknow/importaz/blob/master/config/routes-api.ini
 By convention, we introduced two additional parameter/features:
 
 1. *workspace* - the workspace name, default workspace name is 'a'.  You can achieve multi-tenancy by assigning your client a code and then use this code as your workspace value.
-2. *environment* - we use number to identify environments: dev (31), tst (33), uat (35), stg (37), and prd (39).  This reserved a00-a29 for internal table naming.  These tables would, obviously, be sorted at the top.  Environment can be setup in a file called config/config.ini, which has example and documenation here (https://github.com/niiknow/importaz/blob/master/config/config.example.ini) 
+2. *environment* - we use number to identify environments: dev (39), tst (37), uat (35), stg (33), and prd (31).  This reserved a00-a29 for internal table naming.  These tables would, obviously, be sorted at the top.  Environment can be setup in a file called config/config.ini, which has example and documenation here (https://github.com/niiknow/importaz/blob/master/config/config.example.ini) 
 
 POST BODY:
 ``` json

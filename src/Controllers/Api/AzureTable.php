@@ -9,7 +9,6 @@ use WindowsAzure\Common\ServicesBuilder;
 
 class AzureTable extends \Controllers\BaseSecuredController
 {
-
     /**
      * execute table action
      * @param array $postBody
@@ -300,34 +299,9 @@ class AzureTable extends \Controllers\BaseSecuredController
         return $rst;
     }
 
-/**
- * get two digit that identify the environment
- * @return string
- */
-    public function envId()
-    {
-        $env = $this->getOrDefault('app.env', 'dev');
-
-        // use 3 to prevent system table conflict
-        $rst = '3';
-        if ($env == 'dev') {
-            return $rst . '1';
-        } elseif ($env == 'tst') {
-            return $rst . '3';
-        } elseif ($env == 'uat') {
-            return $rst . '5';
-        } elseif ($env == 'stg') {
-            return $rst . '7';
-        } elseif ($env == 'prd') {
-            return $rst . '9';
-        }
-
-        return $rst . '0';
-    }
-
-/**
- * get table rest body
- */
+    /**
+     * get table rest body
+     */
     public function tableRestProxy($tableName)
     {
         $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
@@ -343,9 +317,9 @@ class AzureTable extends \Controllers\BaseSecuredController
         return $proxy;
     }
 
-/**
- * insert queue message
- */
+    /**
+     * insert queue message
+     */
     public function enqueue($queueName, $rst)
     {
         $proxy = ServicesBuilder::getInstance()->createQueueService($this->connectionString);

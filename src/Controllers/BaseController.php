@@ -117,4 +117,29 @@ class BaseController
             echo $body;
         }
     }
+
+    /**
+     * get two digit that identify the environment
+     * @return string
+     */
+    public function envId()
+    {
+        $env = $this->getOrDefault('app.env', 'dev');
+
+        // use 3 to prevent system table conflict
+        $rst = '3';
+        if ($env == 'dev') {
+            return $rst . '9';
+        } elseif ($env == 'tst') {
+            return $rst . '7';
+        } elseif ($env == 'uat') {
+            return $rst . '5';
+        } elseif ($env == 'stg') {
+            return $rst . '3';
+        } elseif ($env == 'prd') {
+            return $rst . '1';
+        }
+
+        return $rst . '0';
+    }
 }
