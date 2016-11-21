@@ -6,7 +6,7 @@ class Index extends BaseController
 {
     public function index()
     {
-        echo 'Hello World!\n';
+        echo 'OK';
     }
 
     public function hmac()

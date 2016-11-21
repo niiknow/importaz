@@ -30,7 +30,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         $actualTableName = $namePrefix . $tableName;
 
         if (is_null($filter)) {
-            $errors[] = "$filter is required";
+            $errors[] = [ "message" => "$filter is required" ];
         }
         if (count($errors) <= 0) {
             try {
@@ -53,9 +53,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                 $tableRestProxy = $this->tableRestProxy($actualTableName);
                 $rst            = $tableRestProxy->queryEntities($actualTableName, $options);
             } catch (ServiceException $e) {
-                $code          = $e->getCode();
-                $error_message = $e->getMessage();
-                $errors[]      = "main $code: $error_message";
+                $errors[] = [ "message" => $e->getMessage(), "code" => e->getCode() ];
             }
         }
 
@@ -218,22 +216,22 @@ class AzureTable extends \Controllers\BaseSecuredController
         $nameRegex = '/^[a-z][a-z0-9]{2,62}$/';
         // validate table name
         if (!preg_match($nameRegex, $tableName)) {
-            $errors[] = "invalid tableName '$tableName' value";
+            $errors[] = [ "message" => "invalid tableName '$tableName' value" ];
         }
 
         // validate partition key
         if (!preg_match($nameRegex, $partitionKey)) {
-            $errors[] = "invalid partitionKey '$partitionKey' value";
+            $errors[] = [ "message" => "invalid partitionKey '$partitionKey' value" ];
         }
 
         if (!isset($postBody['items'])) {
-            $errors[] = "items array is required";
+            $errors[] = [ "message" => "items array is required" ];
         }
 
         $items      = $postBody['items'];
         $itemsCount = count($items);
         if ($itemsCount > 100) {
-            $errors[] = "expected items count to be less than 100 but got " . $itemsCount;
+            $errors[] = [ "message" => "expected items count to be less than 100 but got " . $itemsCount ];
         }
 
         $entity = null;
@@ -268,14 +266,14 @@ class AzureTable extends \Controllers\BaseSecuredController
                     }
 
                     if (!isset($item['rowKey'])) {
-                        $errors[] = "$i required a rowKey";
+                        $errors[] = [ "message" => "$i required a rowKey" ];
                         continue;
                     }
                 }
 
                 $rowKey = $item['rowKey'];
                 if (!preg_match('/[a-zA-Z0-9-_\.\~\,]+/', $rowKey)) {
-                    $errors[] = "$i has invalid rowKey: $rowKey";
+                    $errors[] = [ "message" => "$i has invalid rowKey: $rowKey" ]
                 }
 
                 if (isset($item['delete'])) {
@@ -291,7 +289,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                         }
 
                         if (!preg_match('/[a-zA-Z0-9-_\.\~\,]+/', $key)) {
-                            $errors[] = "$i column name $key is invalid";
+                            $errors[] = [ "message" => "$i column name $key is invalid" ];
                             continue;
                         }
 
@@ -357,12 +355,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                     $this->enqueue($queueName, $rst);
                 }
             } catch (ServiceException $e) {
-                // Handle exception based on error codes and messages.
-                // Error codes and messages are here:
-                // http://msdn.microsoft.com/library/azure/dd179438.aspx
-                $code            = $e->getCode();
-                $error_message   = $e->getMessage();
-                $rst['errors'][] = "main $code: $error_message";
+                $errors[] = [ "message" => $e->getMessage(), "code" => e->getCode() ];
             }
         }
 
@@ -379,7 +372,7 @@ class AzureTable extends \Controllers\BaseSecuredController
 
         // validate workspace
         if (!preg_match('/^[a-z]+$/', $workspace)) {
-            $errors[] = "invalid workspace '$workspace' value";
+            $errors[] = [ "message" => "invalid workspace '$workspace' value" ];
         }
 
         return $workspace;
@@ -402,9 +395,7 @@ class AzureTable extends \Controllers\BaseSecuredController
             $proxy->createTable($tableName);
             $cache->set("aztable-" . $tableName, true, $this->getOrDefault("ttl.aztable", 600));
         } catch (ServiceException $e) {
-            $code            = $e->getCode();
-            $error_message   = $e->getMessage();
-            $rst['errors'][] = "createTable $code: $error_message";
+            $errors[] = [ "message" => $e->getMessage(), "code" => e->getCode() ];
         }
         return $proxy;
     }
@@ -423,11 +414,7 @@ class AzureTable extends \Controllers\BaseSecuredController
             // storage explorer visibility
             $proxy->createMessage($queueName, base64_encode($jobMessage));
         } catch (ServiceException $e) {
-            // queue must be created ahead of time so it can be handled
-            // otherwise, what is the point?
-            $code            = $e->getCode();
-            $error_message   = $e->getMessage();
-            $rst['errors'][] = "enqueue $code: $error_message";
+            $errors[] = [ "message" => $e->getMessage(), "code" => e->getCode() ];
         }
     }
 }

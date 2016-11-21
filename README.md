@@ -44,7 +44,7 @@ curl -i -X POST -H "Content-Type: application/json" http://localhost:8888/api/ta
         "blah": "blah",
         "col2": "hi"
     }]
-}' -H "X_AUTH: hmac:timestamp_in_seconds,valid_duration_in_seconds:our_hmac_signature"
+}' -H "X_AUTH: apiUserName:timestamp_in_seconds,valid_duration_in_seconds:our_hmac_signature"
 ```
 
 ## API explain

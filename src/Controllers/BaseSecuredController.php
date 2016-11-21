@@ -18,17 +18,19 @@ class BaseSecuredController extends BaseController
 
         // split to timestamp and signature
         $hdrs      = explode(':', $hdr);
-        $method    = $hdrs[0];
+        $apiUser   = $hdrs[0];
         $tsField   = $hdrs[1]; // in seconds
         $signature = $hdrs[2]; // base64 encoded
 
-        if ($method === 'hmac') {
+        $users = $this->getOrDefault("api_users", []);
+
+        if (!isset($users[$apiUser])) {
             $algo         = $this->getOrDefault('security.algo', 'sha256');
-            $sharedSecret = $this->getOrDefault('security.secret');
+            $passwerd     = $users[$apiUser];
 
             // sharedSecret is encoded to base64 before validation
             if (isset($sharedSecret)
-                && $this->isValidSignature($tsField, $signature, base64_encode($sharedSecret), $algo)) {
+                && $this->isValidSignature($tsField, $signature, base64_encode($passwerd), $algo)) {
                 return;
             }
 
@@ -36,7 +38,7 @@ class BaseSecuredController extends BaseController
             return;
         }
 
-        $this->f3->error('403', "X_AUTH header method is invalid $method");
+        $this->f3->error('403', "X_AUTH user is invalid");
         return;
     }
 }
