@@ -3,6 +3,7 @@
 namespace Controllers\Api;
 
 use MicrosoftAzure\Storage\Common\ServiceException;
+use MicrosoftAzure\Storage\Table\Models;
 use MicrosoftAzure\Storage\Table\Models\BatchOperations;
 use MicrosoftAzure\Storage\Table\Models\Entity;
 use WindowsAzure\Common\ServicesBuilder;
@@ -10,9 +11,85 @@ use WindowsAzure\Common\ServicesBuilder;
 class AzureTable extends \Controllers\BaseSecuredController
 {
     /**
-     * execute table action
-     * @param array $postBody
+     * query table
      */
+    public function query()
+    {
+        $f3              = $this->f3;
+        $params          = $this->params;
+        $errors          = array();
+        $workspace       = $this->getWorkspace($errors);
+        $env             = $this->envId();
+        $top             = $this->getOrDefault('GET.$top', null);
+        $select          = $this->getOrDefault('GET.$select', null);
+        $filter          = $this->getOrDefault('GET.$filter', null);
+        $nextpk          = $this->getOrDefault('GET.nextpk', null);
+        $nextrk          = $this->getOrDefault('GET.nextrk', null);
+        $tableName       = $params['tableName'];
+        $namePrefix      = $workspace . $env;
+        $actualTableName = $namePrefix . $tableName;
+
+        if (is_null($filter)) {
+            $errors[] = "$filter is required";
+        }
+        if (count($errors) <= 0) {
+            try {
+                $options = new \MicrosoftAzure\Storage\Table\Models\QueryEntitiesOptions();
+                $options->setFilter($filter);
+
+                if (!is_null($top)) {
+                    $options->setTop($top);
+                }
+                if (!is_null($select)) {
+                    $options->setSelectFields($select);
+                }
+                if (!is_null($nextpk)) {
+                    $options->setNextPartitionKey($nextpk);
+                }
+                if (!is_null($nextrk)) {
+                    $options->setNextRowKey($nextrk);
+                }
+
+                $tableRestProxy = $this->tableRestProxy($actualTableName);
+                $rst            = $tableRestProxy->queryEntities($actualTableName, $options);
+            } catch (ServiceException $e) {
+                $code          = $e->getCode();
+                $error_message = $e->getMessage();
+                $errors[]      = "main $code: $error_message";
+            }
+        }
+
+        if (count($errors) <= 0) {
+            $entities = $rst->getEntities();
+            $items    = array();
+            $result   = [
+                "nextpk" => $rst->getNextPartitionKey(),
+                "nextnk" => $rst->getNextRowKey(),
+            ];
+
+            foreach ($entities as $entity) {
+                $properties = $entity->getProperties();
+                $item       = array();
+                foreach ($properties as $key => $value) {
+                    $item[$key] = $entity->getPropertyValue($key);
+                }
+                $items[] = $item;
+            }
+            $result["items"] = $items;
+            $result["count"] = count($items);
+        } else {
+            $result = ["errors" => $errors];
+        }
+        $result["tableName"]  = $actualTableName;
+        $result["namePrefix"] = $namePrefix;
+
+        $this->json($result);
+    }
+
+/**
+ * execute table action
+ * @param array $postBody
+ */
     public function execAction($postBody)
     {
         $f3           = $this->f3;
@@ -58,18 +135,18 @@ class AzureTable extends \Controllers\BaseSecuredController
         $this->json($result);
     }
 
-    /**
-     * insert/update/delete json
-     */
+/**
+ * insert/update/delete json
+ */
     public function index()
     {
         $postBody = json_decode($this->f3->BODY, true);
         $this->execAction($postBody);
     }
 
-    /**
-     * insert/update/delete csv
-     */
+/**
+ * insert/update/delete csv
+ */
     public function csv()
     {
         $csvString = $this->f3->BODY;
@@ -77,14 +154,14 @@ class AzureTable extends \Controllers\BaseSecuredController
         $this->execAction($postBody);
     }
 
-    /**
-     * convert csv to array
-     * @param  string  $csvString
-     * @param  string  $delimiter
-     * @param  string  $enclosure
-     * @param  string  $escape
-     * @return array
-     */
+/**
+ * convert csv to array
+ * @param  string  $csvString
+ * @param  string  $delimiter
+ * @param  string  $enclosure
+ * @param  string  $escape
+ * @return array
+ */
     public function csvToArray($csvString, $delimiter = ',', $enclosure = '"', $escape = '\\')
     {
         $header = null;
@@ -120,28 +197,23 @@ class AzureTable extends \Controllers\BaseSecuredController
         return ["items" => $data, "errorRows" => join("\n", $errors)];
     }
 
-    /**
-     * execute table
-     * @param  string   $workspace
-     * @param  string   $tableName
-     * @param  string   $partitionKey
-     * @param  object   $postBody
-     * @return object
-     */
-    public function execTable($workspace, $tableName, $partitionKey, $postBody)
+/**
+ * execute table
+ * @param  string   $workspace
+ * @param  string   $tableName
+ * @param  string   $partitionKey
+ * @param  object   $postBody
+ * @return object
+ */
+    public function execTable($tableName, $partitionKey, $postBody)
     {
         $errors = array();
 
         // Create list of batch operation.
         $operations = new BatchOperations();
-        if (empty($workspace)) {
-            $workspace = 'a';
-        }
-
-        // validate workspace
-        if (!preg_match('/^[a-z]+$/', $workspace)) {
-            $errors[] = "invalid workspace '$workspace' value";
-        }
+        $workspace  = $this->getWorkspace($errors);
+        $env        = $this->envId();
+        $namePrefix = $workspace . $env;
 
         $nameRegex = '/^[a-z][a-z0-9]{2,62}$/';
         // validate table name
@@ -164,10 +236,8 @@ class AzureTable extends \Controllers\BaseSecuredController
             $errors[] = "expected items count to be less than 100 but got " . $itemsCount;
         }
 
-        $entity     = null;
-        $env        = $this->envId();
-        $namePrefix = $workspace . $env;
-        $rst        = [
+        $entity = null;
+        $rst    = [
             "tableName"    => $namePrefix . $tableName,
             "partitionKey" => $partitionKey,
             "body"         => $postBody,
@@ -299,27 +369,49 @@ class AzureTable extends \Controllers\BaseSecuredController
         return $rst;
     }
 
-    /**
-     * get table rest body
-     */
+    public function getWorkspace(&$errors)
+    {
+        $f3        = $this->f3;
+        $workspace = $f3->get('GET.workspace');
+        if (empty($workspace)) {
+            $workspace = 'a';
+        }
+
+        // validate workspace
+        if (!preg_match('/^[a-z]+$/', $workspace)) {
+            $errors[] = "invalid workspace '$workspace' value";
+        }
+
+        return $workspace;
+    }
+
+/**
+ * get table rest body
+ */
     public function tableRestProxy($tableName)
     {
         $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
         try {
+            // check cache
+            $cache = \Cache::instance();
+            if ($cache->exists("aztable-" . $tableName)) {
+                return $proxy;
+            }
+
             // Create table if not exists.
             $proxy->createTable($tableName);
+            $cache->set("aztable-" . $tableName, true, $this->getOrDefault("ttl.aztable", 600));
         } catch (ServiceException $e) {
             $code            = $e->getCode();
             $error_message   = $e->getMessage();
             $rst['errors'][] = "createTable $code: $error_message";
         }
-        $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
         return $proxy;
     }
 
-    /**
-     * insert queue message
-     */
+/**
+ * insert queue message
+ */
     public function enqueue($queueName, $rst)
     {
         $proxy = ServicesBuilder::getInstance()->createQueueService($this->connectionString);

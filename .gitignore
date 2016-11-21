@@ -5,3 +5,4 @@ vendor/
 *.lock
 *.log
 config/config.ini
+/tmp/cache/

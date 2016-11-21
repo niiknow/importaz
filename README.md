@@ -50,7 +50,7 @@ curl -i -X POST -H "Content-Type: application/json" http://localhost:8888/api/ta
 ## API explain
 https://github.com/niiknow/importaz/blob/master/config/routes-api.ini
 
-### POST /api/table/@tableName/@partitionKey?workspace=workspaceName
+### POST /api/table/exec/@tableName/@partitionKey?workspace=workspaceName
 * @tableName - the table to perform operation
 * @partitionKey - the partition key
 
@@ -72,8 +72,17 @@ All items will be imported into the "main" partition.  All items (including *del
 
 To delete an item, include property called *delete* and set to true or anything.
 
-### POST /api/table/csv/@tableName/@partitionKey
+### POST /api/table/execsv/@tableName/@partitionKey
 POST a CSV content to this endpoint to import.  First row must be header row.  The CSV content will be converted to the *items* array and POST to the previous endpoint.
+
+### GET /api/table/query/@tableName
+This is an OData endpoint with parameters:
+1. *workspace* - default 'a'
+2. *$filter* - the filter
+3. *$select* - fields to get
+4. *$top* - number of records to get
+5. *nextpk* - next continuation/paging primary key
+6. *nextrk* - next continuation/paging row key
 
 ## Why? TLDR;
 1. Cloud - because we don't want to manage it
