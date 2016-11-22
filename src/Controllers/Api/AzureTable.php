@@ -93,7 +93,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         $errors       = array();
         $f3           = $this->f3;
         $params       = $this->params;
-        $partitionKey = $params['partitionKey'];
+        $partitionKey = $this->getOrDefault('GET.pk', 'main');
         $tableName    = $params['tableName'];
         $tenant       = $this->getTenant($errors);
         // $count        = 0;
@@ -364,6 +364,9 @@ class AzureTable extends \Controllers\BaseSecuredController
         return $rst;
     }
 
+    /**
+     * get tenant code
+     */
     public function getTenant(&$errors)
     {
         $f3     = $this->f3;

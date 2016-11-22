@@ -33,7 +33,7 @@ composer update --no-dev
 
 Example:
 ```
-curl -i -X POST -H "Content-Type: application/json" http://localhost:8888/api/table/test/a123 -d  '{
+curl -i -X POST -H "Content-Type: application/json" http://localhost:8888/api/table/test -d  '{
     "notifyQueue": "test2",
     "items": [{
         "id": "123",
@@ -50,34 +50,33 @@ curl -i -X POST -H "Content-Type: application/json" http://localhost:8888/api/ta
 ## API explain
 https://github.com/niiknow/importaz/blob/master/config/routes-api.ini
 
-### POST /api/table/exec/@tableName/@partitionKey?workspace=workspaceName
+### POST /api/table/exec/@tableName?pk=partitionKey&tenant=tenantCode
 * @tableName - the table to perform operation
-* @partitionKey - the partition key
+By convention, we introduced three additional parameter/features:
 
-By convention, we introduced two additional parameter/features:
-
-1. *workspace* - the workspace name, default workspace name is 'a'.  You can achieve multi-tenancy by assigning your client a code and then use this code as your workspace value.
-2. *environment* - we use number to identify environments: dev (39), tst (37), uat (35), stg (33), and prd (31).  This reserved a00-a29 for internal table naming.  These tables would, obviously, be sorted at the top.  Environment can be setup in a file called config/config.ini, which has example and documenation here (https://github.com/niiknow/importaz/blob/master/config/config.example.ini) 
+1. *pk* - partition key, default is 'main'.  Use this like having multiple workspaces.
+2. *tenant* - the tenant code, default is 'a'.  Use this for multi-tenancy.
+3. *environment* - we use number to identify environments: dev (39), tst (37), uat (35), stg (33), and prd (31).  This reserved a00-a29 for internal table naming.  These tables would, obviously, be sorted at the top.  Environment can be setup in a file called config/config.ini, which has example and documenation here (https://github.com/niiknow/importaz/blob/master/config/config.example.ini) 
 
 POST BODY:
 ``` json
  { "items" : [...], "notifyQueue": "queueName", "useNamePrefix": true }
 ```
 
-Example, let say you have the following parameters: @tableName ('products'), @partitionKey ('main'), @workspace ('acme'), and @environment ('prd').
+Example, let say you have the following parameters: @tableName ('products'), @pk (empty), @tenant ('acme'), and @environment ('prd').
 
-Your destination table would be: *acme39products*
+Your destination table would be: *acme31products*
 
 All items will be imported into the "main" partition.  All items (including *delete*) must include one of the following required fields: *rowKey*, *id*, *ean*, or *upc*.
 
 To delete an item, include property called *delete* and set to true or anything.
 
-### POST /api/table/execsv/@tableName/@partitionKey
+### POST /api/table/execsv/@tableName?pk=partitionKey&tenant=tenantCode
 POST a CSV content to this endpoint to import.  First row must be header row.  The CSV content will be converted to the *items* array and POST to the previous endpoint.
 
 ### GET /api/table/query/@tableName
 This is an OData endpoint with parameters:
-1. *workspace* - default 'a'
+1. *tenant* - default 'a'
 2. *$filter* - the filter
 3. *$select* - fields to get
 4. *$top* - number of records to get
