@@ -554,6 +554,7 @@ FileETag None
     php_value always_populate_raw_post_data -1
 </IfModule>
 
+Header unset X-Powered-By
 
 RewriteEngine On
 RewriteCond %{THE_REQUEST} /public/([^\s?]*) [NC]
