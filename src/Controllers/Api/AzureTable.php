@@ -11,20 +11,56 @@ use WindowsAzure\Common\ServicesBuilder;
 class AzureTable extends \Controllers\BaseSecuredController
 {
     /**
+     * delete table partition helper
+     */
+    public function deleteTablePartition()
+    {
+        $notifyQueue  = $this->getOrDefault("GET.notifyQueue", null);
+        $partitionKey = $this->params["partitionKey"];
+        $resultQuery  = $this->execQuery("PartitionKey eq '$partitionKey'", null, "PartitionKey,RowKey");
+        $items        = $queryResult["items"];
+        foreach ($items as $item) {
+            $item["delete"] = true;
+        }
+        $postData = ["items" => $items];
+        if ($notifyQueue != null) {
+            $postData["notifyQueue"] = $notifyQueue;
+        }
+        $result                 = $this->execAction($postBody);
+        $result["hasMoreItems"] = isset($resultQuery["nextrk"]);
+        $this->json($result);
+    }
+
+    /**
      * query table
      */
     public function query()
+    {
+        $filter = $this->getOrDefault('GET.$filter', null);
+        $top    = $this->getOrDefault('GET.$top', null);
+        $select = $this->getOrDefault('GET.$select', null);
+        $nextpk = $this->getOrDefault('GET.nextpk', null);
+        $nextrk = $this->getOrDefault('GET.nextrk', null);
+        $result = $this->execQuery($filter, $top, $select, $nextpk, $nextrk);
+        $this->json($result);
+    }
+
+    /**
+     * execute query helper
+     * @param  string  $filter
+     * @param  string  $top
+     * @param  string  $select
+     * @param  string  $nextpk
+     * @param  string  $nextrk
+     * @return array
+     */
+    public function execQuery($filter, $top = null, $select = null, $nextpk = null, $nextrk = null)
     {
         $f3              = $this->f3;
         $params          = $this->params;
         $errors          = array();
         $tenant          = $this->getTenant($errors);
         $env             = $this->envId();
-        $top             = $this->getOrDefault('GET.$top', null);
-        $select          = $this->getOrDefault('GET.$select', null);
-        $filter          = $this->getOrDefault('GET.$filter', null);
-        $nextpk          = $this->getOrDefault('GET.nextpk', null);
-        $nextrk          = $this->getOrDefault('GET.nextrk', null);
         $tableName       = $params['tableName'];
         $namePrefix      = $tenant . $env;
         $actualTableName = $namePrefix . $tableName;
@@ -80,8 +116,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         }
         $result["tableName"]  = $actualTableName;
         $result["namePrefix"] = $namePrefix;
-
-        $this->json($result);
+        return $result;
     }
 
     /**
