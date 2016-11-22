@@ -4,21 +4,36 @@ namespace Controllers;
 
 class Index extends BaseController
 {
+    /**
+     * health check
+     */
     public function index()
     {
         echo 'OK';
     }
 
+    /**
+     * get hmac, only in dev
+     */
     public function hmac()
     {
+        if (!isset($this->params["user"])) {
+            echo 'OK';
+            return;
+        }
+
+        $apiUser = $this->params["user"];
         // example generating api signature
         if ($this->getOrDefault("app.env", 'dev') === 'dev') {
-            $algo         = $this->getOrDefault('security.algo', 'sha256');
-            $sharedSecret = $this->getOrDefault('security.secret');
-            $time         = time();
-            $validLength  = 60 * 60; // valid for 1 hours
-            $sig          = $this->generateSignature($time, $validLength, base64_encode($sharedSecret), $algo);
-            echo 'hmac:' . $time . ',' . $validLength . ':' . $sig;
+
+            $users       = $this->getOrDefault("api_users", []);
+            $algo        = $this->getOrDefault('security.algo', 'sha256');
+            $users       = $this->getOrDefault("api_users", []);
+            $passwerd    = $users[$apiUser];
+            $time        = time();
+            $validLength = 60 * 60; // valid for 1 hours
+            $sig         = $this->generateSignature($time, $validLength, base64_encode($passwerd), $algo);
+            echo $apiUser . ':' . $time . ',' . $validLength . ':' . $sig;
             return;
         }
 

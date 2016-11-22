@@ -25,8 +25,8 @@ class BaseSecuredController extends BaseController
         $users = $this->getOrDefault("api_users", []);
 
         if (!isset($users[$apiUser])) {
-            $algo         = $this->getOrDefault('security.algo', 'sha256');
-            $passwerd     = $users[$apiUser];
+            $algo     = $this->getOrDefault('security.algo', 'sha256');
+            $passwerd = $users[$apiUser];
 
             // sharedSecret is encoded to base64 before validation
             if (isset($sharedSecret)
