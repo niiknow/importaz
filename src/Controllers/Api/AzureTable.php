@@ -223,7 +223,7 @@ class AzureTable extends \Controllers\BaseSecuredController
 
         // validate partition key
         if (!preg_match($nameRegex, $partitionKey)) {
-            $errors[] = ["message" => "invalid partitionKey '$partitionKey' value"];
+            $errors[] = ["message" => "invalid PartitionKey '$partitionKey' value"];
         }
 
         if (!isset($postBody['items'])) {
@@ -239,7 +239,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         $entity = null;
         $rst    = [
             "tableName"    => $namePrefix . $tableName,
-            "partitionKey" => $partitionKey,
+            "PartitionKey" => $partitionKey,
             "body"         => $postBody,
             "errors"       => $errors,
             "namePrefix"   => $namePrefix,
@@ -253,29 +253,29 @@ class AzureTable extends \Controllers\BaseSecuredController
                     break;
                 }
 
-                // validate rowKey
-                if (!isset($item['rowKey'])) {
-                    // convert id to rowKey
+                // validate RowKey
+                if (!isset($item['RowKey'])) {
+                    // convert id to RowKey
                     if (isset($item['id'])) {
-                        $item['rowKey'] = $item['id'];
+                        $item['RowKey'] = $item['id'];
                     }
 
-                    // convert ean or upc to rowKey
+                    // convert ean or upc to RowKey
                     if (isset($item['ean'])) {
-                        $item['rowKey'] = str_pad($item['ean'], 13, '0', STR_PAD_LEFT);
+                        $item['RowKey'] = str_pad($item['ean'], 13, '0', STR_PAD_LEFT);
                     } elseif (isset($item['upc'])) {
-                        $item['rowKey'] = str_pad($item['upc'], 13, '0', STR_PAD_LEFT);
+                        $item['RowKey'] = str_pad($item['upc'], 13, '0', STR_PAD_LEFT);
                     }
 
-                    if (!isset($item['rowKey'])) {
-                        $errors[] = ["message" => "$i required a rowKey"];
+                    if (!isset($item['RowKey'])) {
+                        $errors[] = ["message" => "$i required a RowKey"];
                         continue;
                     }
                 }
 
-                $rowKey = $item['rowKey'];
+                $rowKey = $item['RowKey'];
                 if (!preg_match('/[a-zA-Z0-9-_\.\~\,]+/', $rowKey)) {
-                    $errors[] = ["message" => "$i has invalid rowKey: $rowKey"]
+                    $errors[] = ["message" => "$i has invalid RowKey: $rowKey"]
                 }
 
                 if (isset($item['delete'])) {
@@ -286,7 +286,8 @@ class AzureTable extends \Controllers\BaseSecuredController
                     $entity->setRowKey($rowKey);
 
                     foreach ($item as $key => $value) {
-                        if ($key === 'rowKey' || $key == 'partitionKey' || $key == 'delete') {
+                        $excludes = array("delete", "RowKey", "PartitionKey", "Timestamp");
+                        if (in_array($key, $excludes)) {
                             continue;
                         }
 
@@ -337,7 +338,7 @@ class AzureTable extends \Controllers\BaseSecuredController
 
                     if (isset($item['delete'])) {
                         $this->tableRestProxy($rst['tableName'])
-                            ->deleteEntity($rst['tableName'], $partitionKey, $item['rowKey']);
+                            ->deleteEntity($rst['tableName'], $partitionKey, $item['RowKey']);
                     } else {
                         $this->tableRestProxy($rst['tableName'])
                             ->insertOrMergeEntity($rst['tableName'], $entity);
