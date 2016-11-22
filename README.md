@@ -74,6 +74,10 @@ To delete an item, include property called *delete* and set to true or anything.
 ### POST /api/table/execsv/@tableName?pk=partitionKey&tenant=tenantCode
 POST a CSV content to this endpoint to import.  First row must be header row.  The CSV content will be converted to the *items* array and POST to the previous endpoint.
 
+### DELETE /api/table/@tableName/@partitionKey?notifyQueue=queueName
+This method is to help bulk delete a table partition.  It returns the result with *hasMoreItems* value set.
+Client can keep calling this method until *hasMoreItems* is false.
+
 ### GET /api/table/query/@tableName
 This is an OData endpoint with parameters:
 1. *tenant* - default 'a'

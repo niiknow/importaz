@@ -26,7 +26,10 @@ class AzureTable extends \Controllers\BaseSecuredController
         if ($notifyQueue != null) {
             $postData["notifyQueue"] = $notifyQueue;
         }
-        $result                 = $this->execAction($postBody);
+        $result = $this->execAction($postBody);
+
+        // delete perform bulk 1000 items each time this method is called and return hasMoreItems
+        // client should keep calling this method until hasMoreItems is false
         $result["hasMoreItems"] = isset($resultQuery["nextrk"]);
         $this->json($result);
     }
