@@ -12,12 +12,12 @@ class Account extends \Controllers\Api\AzureTable
     {
         $this->params['tableName'] = 'account';
         $excludeDeleted            = $this->getOrDefault('GET.excludeDeleted', '');
-        $query                     = "RowKey eq '_config'";
+        $query                     = "";
         if (!empty($excludeDeleted)) {
-            $query = "$query and deleteAt eq ''";
+            $query = "deleteAt eq ''";
         }
 
-        return $this->execQuery($query);
+        return $this->execQuery($query, 1000, null, null, '_config');
     }
 
     /**
