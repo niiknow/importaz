@@ -30,7 +30,7 @@ class Account extends \Controllers\Api\AzureTable
         $this->params['tableName'] = 'account';
         $name                      = $this->params["name"];
 
-        return $this->execQuery("PartitionKey eq '$name' and RowKey eq '_config'");
+        return $this->execQuery("", 1000, null, $name, '_config');
     }
 
     /**
@@ -43,7 +43,7 @@ class Account extends \Controllers\Api\AzureTable
         $name                      = $this->params["name"];
 
         // return $this->execQuery("PartitionKey eq '$name' and RowKey ne '_config'");
-        return $this->execQuery("PartitionKey eq '$name'");
+        return $this->execQuery("", 1000, null, $name);
     }
 
     /**
@@ -63,7 +63,8 @@ class Account extends \Controllers\Api\AzureTable
         // slugify user
         $user = Web::instance()->slug(trim($email));
 
-        return $this->execQuery("PartitionKey eq '$name' and RowKey eq '$user'");
+        // return $this->execQuery("PartitionKey eq '$name' and RowKey eq '$user'");
+        return $this->execQuery("", 1000, null, $name, $user);
     }
 
     /**
