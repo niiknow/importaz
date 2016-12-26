@@ -260,6 +260,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         }
 
         // validate partition key
+        $nameRegex = "/[a-zA-Z0-9-_\.\~\,\! ]+/";
         if (!preg_match($nameRegex, $partitionKey)) {
             $errors[] = ["message" => "invalid PartitionKey '$partitionKey' value"];
         }
@@ -312,7 +313,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                 }
 
                 $rowKey = $item['RowKey'];
-                if (!preg_match("/[a-zA-Z0-9-_\.\~\,\! ]+/", $rowKey)) {
+                if (!preg_match($nameRegex, $rowKey)) {
                     $errors[] = ["message" => "$i has invalid RowKey: $rowKey"]
                 }
 
