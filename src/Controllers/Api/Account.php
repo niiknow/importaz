@@ -91,7 +91,7 @@ class Account extends \Controllers\Api\AzureTable
         $data               = [
             "items" => [$postBody],
         ];
-        $result = $this->execTable("account", $name, $postBody);
+        $result = $this->execTable("account", $name, $data);
         return $this->json($result);
     }
 
@@ -111,7 +111,7 @@ class Account extends \Controllers\Api\AzureTable
         $data                 = [
             "items" => [$postBody],
         ];
-        $result = $this->execTable("account", $name, $postBody);
+        $result = $this->execTable("account", $name, $data);
         return $this->json($result);
     }
 
