@@ -62,7 +62,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         $f3              = $this->f3;
         $params          = $this->params;
         $errors          = array();
-        $tenant          = $this->getTenant($errors);
+        $tenant          = $this->getTenantCode($errors);
         $env             = $this->envId();
         $tableName       = $params['tableName'];
         $namePrefix      = $tenant . $env;
@@ -133,7 +133,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         $params       = $this->params;
         $partitionKey = $this->getOrDefault('GET.pk', 'main');
         $tableName    = $params['tableName'];
-        $tenant       = $this->getTenant($errors);
+        $tenant       = $this->getTenantCode($errors);
         // $count        = 0;
         $result       = array();
         $errorCount   = 0;
@@ -249,7 +249,7 @@ class AzureTable extends \Controllers\BaseSecuredController
 
         // Create list of batch operation.
         $operations = new BatchOperations();
-        $tenant     = $this->getTEnant($errors);
+        $tenant     = $this->getTenantCode($errors);
         $env        = $this->envId();
         $namePrefix = $tenant . $env;
 
@@ -406,7 +406,7 @@ class AzureTable extends \Controllers\BaseSecuredController
     /**
      * get tenant code
      */
-    public function getTenant(&$errors)
+    public function getTenantCode(&$errors)
     {
         $f3     = $this->f3;
         $tenant = $f3->get('GET.tenant');
