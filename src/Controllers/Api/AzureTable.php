@@ -253,7 +253,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         $env        = $this->envId();
         $namePrefix = $tenant . $env;
 
-        $nameRegex = '/^[a-z][a-z0-9]{2,62}$/';
+        $nameRegex = "/^[a-z][a-z0-9]{2,62}$/";
         // validate table name
         if (!preg_match($nameRegex, $tableName)) {
             $errors[] = ["message" => "invalid tableName '$tableName' value"];
@@ -312,7 +312,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                 }
 
                 $rowKey = $item['RowKey'];
-                if (!preg_match('/[a-zA-Z0-9-_\.\~\,]+/', $rowKey)) {
+                if (!preg_match("/[a-zA-Z0-9-_\.\~\,\! ]+/", $rowKey)) {
                     $errors[] = ["message" => "$i has invalid RowKey: $rowKey"]
                 }
 

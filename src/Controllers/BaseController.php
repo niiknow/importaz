@@ -85,10 +85,13 @@ class BaseController
             'Content-type'                     => 'application/json; charset=utf-8',
             'Expires'                          => '-1',
             'Access-Control-Max-Age'           => $ttl,
-            'Access-Control-Expose-Headers'    => array_key_exists('acl_expose_headers', $params) ? $params['acl_expose_headers'] : null,
-            'Access-Control-Allow-Methods'     => array_key_exists('acl_http_methods', $params) ? $params['acl_http_methods'] : null,
+            'Access-Control-Expose-Headers'    =>
+            array_key_exists('acl_expose_headers', $params) ? $params['acl_expose_headers'] : null,
+            'Access-Control-Allow-Methods'     =>
+            array_key_exists('acl_http_methods', $params) ? $params['acl_http_methods'] : null,
             'Access-Control-Allow-Origin'      => array_key_exists('acl_origin', $params) ? $params['acl_origin'] : '*',
-            'Access-Control-Allow-Credentials' => array_key_exists('acl_credentials', $params) && !empty($params['acl_credentials']) ? 'true' : 'false',
+            'Access-Control-Allow-Credentials' =>
+            array_key_exists('acl_credentials', $params) && !empty($params['acl_credentials']) ? 'true' : 'false',
             'ETag'                             => array_key_exists('etag', $params) ? $params['etag'] : md5($body),
             'Content-Length'                   => \UTF::instance()->strlen($body),
         ]);
