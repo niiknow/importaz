@@ -6,3 +6,4 @@ vendor/
 *.log
 config/config.ini
 /tmp/cache/
+Archive.zip
