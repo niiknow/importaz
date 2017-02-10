@@ -131,7 +131,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         $errors       = array();
         $f3           = $this->f3;
         $params       = $this->params;
-        $partitionKey = $this->getOrDefault('GET.pk', 'main');
+        $partitionKey = $this->getOrDefault('GET.pk', $this->azDefaultPartition);
         $tableName    = $params['tableName'];
         $tenant       = $this->getTenantCode($errors);
         // $count        = 0;
@@ -181,6 +181,25 @@ class AzureTable extends \Controllers\BaseSecuredController
     {
         $postBody = json_decode($this->f3->BODY, true);
         $this->execAction($postBody);
+    }
+
+    /**
+     * get table name
+     */
+    public function tableName()
+    {
+        $f3              = $this->f3;
+        $params          = $this->params;
+        $errors          = array();
+        $tenant          = $this->getTenantCode($errors);
+        $env             = $this->envId();
+        $tableName       = $params['tableName'];
+        $namePrefix      = $tenant . $env;
+        $actualTableName = $namePrefix . $tableName;
+        $partitionKey    = $this->getOrDefault('GET.pk', $this->azDefaultPartition);
+
+        $result          = [ "tableName" => $actualTableName, "partitionKey" => $partitionKey ];
+        $this->json($result);
     }
 
     /**

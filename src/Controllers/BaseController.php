@@ -12,9 +12,10 @@ class BaseController
      */
     public function __construct(\Base $f3, array $params = [])
     {
-        $this->f3               = $f3;
-        $this->params           = $params;
-        $this->connectionString = $f3->get('db.azstorage');
+        $this->f3                 = $f3;
+        $this->params             = $params;
+        $this->connectionString   = $f3->get('db.azstorage');
+        $this->azDefaultPartition = $f3->get('db.azdpart');
     }
 
     /**
