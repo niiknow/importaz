@@ -92,7 +92,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                 $tableRestProxy = $this->tableRestProxy($actualTableName);
                 $rst            = $tableRestProxy->queryEntities($actualTableName, $options);
             } catch (ServiceException $e) {
-                $errors[] = ["message" => $e->getMessage(), "code" => e->getCode()];
+                $errors[] = ["message" => $e->getMessage(), "code" => $e->getCode()];
             }
         }
 
@@ -416,7 +416,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                     $this->enqueue($queueName, $rst);
                 }
             } catch (ServiceException $e) {
-                $errors[] = ["message" => $e->getMessage(), "code" => e->getCode()];
+                $errors[] = ["message" => $e->getMessage(), "code" => $e->getCode()];
             }
         }
 
@@ -459,7 +459,7 @@ class AzureTable extends \Controllers\BaseSecuredController
             $proxy->createTable($tableName);
             $cache->set("aztable-" . $tableName, true, $this->getOrDefault("ttl.aztable", 600));
         } catch (ServiceException $e) {
-            $errors[] = ["message" => $e->getMessage(), "code" => e->getCode()];
+            $errors[] = ["message" => $e->getMessage(), "code" => $e->getCode()];
         }
         return $proxy;
     }
@@ -478,7 +478,7 @@ class AzureTable extends \Controllers\BaseSecuredController
             // storage explorer visibility
             $proxy->createMessage($queueName, base64_encode($jobMessage));
         } catch (ServiceException $e) {
-            $errors[] = ["message" => $e->getMessage(), "code" => e->getCode()];
+            $errors[] = ["message" => $e->getMessage(), "code" => $e->getCode()];
         }
     }
 }
