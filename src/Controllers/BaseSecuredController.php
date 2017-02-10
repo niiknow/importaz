@@ -10,7 +10,7 @@ class BaseSecuredController extends BaseController
     public function beforeRoute()
     {
         if (!isset($_SERVER['HTTP_X_AUTH'])) {
-            $this->f3->error('403', 'X_AUTH header is required');
+            $this->f3->error('403', 'X-AUTH header is required');
             return;
         }
 
@@ -23,22 +23,21 @@ class BaseSecuredController extends BaseController
         $signature = $hdrs[2]; // base64 encoded
 
         $users = $this->getOrDefault("api_users", []);
-
-        if (!isset($users[$apiUser])) {
+        if (isset($users[$apiUser])) {
             $algo     = $this->getOrDefault('security.algo', 'sha256');
             $passwerd = $users[$apiUser];
 
             // sharedSecret is encoded to base64 before validation
-            if (isset($sharedSecret)
-                && $this->isValidSignature($tsField, $signature, base64_encode($passwerd), $algo)) {
+            if (isset($passwerd)
+                && $this->isValidSignature($tsField, $signature, $passwerd, $algo)) {
                 return;
             }
 
-            $this->f3->error('403', "X_AUTH header hmac validation failed");
+            $this->f3->error('403', "X-AUTH header hmac validation failed");
             return;
         }
 
-        $this->f3->error('403', "X_AUTH user is invalid");
+        $this->f3->error('403', "X-AUTH user is invalid");
         return;
     }
 }

@@ -62,11 +62,8 @@ class AzureTable extends \Controllers\BaseSecuredController
         $f3              = $this->f3;
         $params          = $this->params;
         $errors          = array();
-        $tenant          = $this->getTenantCode($errors);
-        $env             = $this->envId();
-        $tableName       = $params['tableName'];
-        $namePrefix      = $tenant . $env;
-        $actualTableName = $namePrefix . $tableName;
+        $tableRst        = $this->getTableName($errors);
+        $tableName       = $tableRst['tableName'];
 
         if (is_null($filter)) {
             $errors[] = ["message" => "$filter is required"];
@@ -89,8 +86,8 @@ class AzureTable extends \Controllers\BaseSecuredController
                     $options->setNextRowKey($nextrk);
                 }
 
-                $tableRestProxy = $this->tableRestProxy($actualTableName);
-                $rst            = $tableRestProxy->queryEntities($actualTableName, $options);
+                $tableRestProxy = $this->tableRestProxy($tableName, $errors);
+                $rst            = $tableRestProxy->queryEntities($tableName, $options);
             } catch (ServiceException $e) {
                 $errors[] = ["message" => $e->getMessage(), "code" => $e->getCode()];
             }
@@ -117,10 +114,46 @@ class AzureTable extends \Controllers\BaseSecuredController
         } else {
             $result = ["errors" => $errors];
         }
-        $result["tableName"]  = $actualTableName;
-        $result["namePrefix"] = $namePrefix;
+        $result["tableName"]  = $tableName;
         return $result;
     }
+
+    /**
+     * insert/update/delete json
+     */
+    public function index()
+    {
+        $postBody = json_decode($this->f3->BODY, true);
+        $this->execAction($postBody);
+    }
+
+    /**
+     * get table name
+     */
+    public function tableName()
+    {
+        $errors          = array();
+        $this->json($this->getTableName($errors));
+    }
+
+    /**
+     * get table name
+     */
+    public function getTableName(&$errors)
+    {
+        $f3              = $this->f3;
+        $params          = $this->params;
+        $tenant          = $this->getTenantCode($errors);
+        $env             = $this->envId();
+        $tableName       = $params['tableName'];
+        $namePrefix      = $tenant . $env;
+        $actualTableName = $namePrefix . $tableName;
+        $partitionKey    = $this->getOrDefault('GET.pk', $this->azDefaultPartition);
+
+        $result          = [ "tableName" => $actualTableName, "partitionKey" => $partitionKey, "namePrefix" => $namePrefix ];
+        return $result;
+    }
+
 
     /**
      * execute table action
@@ -131,9 +164,10 @@ class AzureTable extends \Controllers\BaseSecuredController
         $errors       = array();
         $f3           = $this->f3;
         $params       = $this->params;
-        $partitionKey = $this->getOrDefault('GET.pk', $this->azDefaultPartition);
-        $tableName    = $params['tableName'];
-        $tenant       = $this->getTenantCode($errors);
+        $tableRst     = $this->getTableName($errors);
+        $tableName    = $tableRst['tableName'];
+        $partitionKey = $tableRst['partitionKey'];
+
         // $count        = 0;
         $result       = array();
         $errorCount   = 0;
@@ -141,12 +175,13 @@ class AzureTable extends \Controllers\BaseSecuredController
 
         // making it possible to execute up to 1000 items
         $items      = $postBody['items'];
+        
         $itemsCount = count($items);
         if ($itemsCount <= 1000) {
             $packages = ceil($itemsCount / 100);
             for ($i = 0; $i < $packages; $i++) {
                 $postBody["items"] = array_slice($items, $i * 100, 100);
-                $tran              = $this->execTable($tenant, $tableName, $partitionKey, $postBody, $isDelete);
+                $tran              = $this->execTable($tableName, $partitionKey, $postBody, $isDelete);
                 $transactions[]    = $tran;
                 // $count += $result["count"];
                 $errorCount += count($tran["errors"]);
@@ -171,34 +206,6 @@ class AzureTable extends \Controllers\BaseSecuredController
         if (isset($postBody["errorRows"])) {
             $result["errorRows"] = $postBody["errorRows"];
         }
-        $this->json($result);
-    }
-
-    /**
-     * insert/update/delete json
-     */
-    public function index()
-    {
-        $postBody = json_decode($this->f3->BODY, true);
-        $this->execAction($postBody);
-    }
-
-    /**
-     * get table name
-     */
-    public function tableName()
-    {
-        $f3              = $this->f3;
-        $params          = $this->params;
-        $errors          = array();
-        $tenant          = $this->getTenantCode($errors);
-        $env             = $this->envId();
-        $tableName       = $params['tableName'];
-        $namePrefix      = $tenant . $env;
-        $actualTableName = $namePrefix . $tableName;
-        $partitionKey    = $this->getOrDefault('GET.pk', $this->azDefaultPartition);
-
-        $result          = [ "tableName" => $actualTableName, "partitionKey" => $partitionKey ];
         $this->json($result);
     }
 
@@ -265,12 +272,8 @@ class AzureTable extends \Controllers\BaseSecuredController
     public function execTable($tableName, $partitionKey, $postBody)
     {
         $errors = array();
-
         // Create list of batch operation.
         $operations = new BatchOperations();
-        $tenant     = $this->getTenantCode($errors);
-        $env        = $this->envId();
-        $namePrefix = $tenant . $env;
 
         $nameRegex = "/^[a-z][a-z0-9]{2,62}$/";
         // validate table name
@@ -287,7 +290,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         if (!isset($postBody['items'])) {
             $errors[] = ["message" => "items array is required"];
         }
-
+        
         $items      = $postBody['items'];
         $itemsCount = count($items);
         if ($itemsCount > 100) {
@@ -296,11 +299,10 @@ class AzureTable extends \Controllers\BaseSecuredController
 
         $entity = null;
         $rst    = [
-            "tableName"    => $namePrefix . $tableName,
+            "tableName"    => $tableName,
             "PartitionKey" => $partitionKey,
             "body"         => $postBody,
             "errors"       => $errors,
-            "namePrefix"   => $namePrefix,
             "count"        => $itemsCount,
         ];
 
@@ -333,7 +335,7 @@ class AzureTable extends \Controllers\BaseSecuredController
 
                 $rowKey = $item['RowKey'];
                 if (!preg_match($nameRegex, $rowKey)) {
-                    $errors[] = ["message" => "$i has invalid RowKey: $rowKey"]
+                    $errors[] = ["message" => "$i has invalid RowKey: $rowKey"];
                 }
 
                 if (isset($item['delete'])) {
@@ -366,27 +368,30 @@ class AzureTable extends \Controllers\BaseSecuredController
             try {
                 $today = new \DateTime();
 
-                if (isset($postBody['notifyQueue'])) {
-                    if ($itemsCount > 1) {
-                        // user 10 to sort at top, reserve 0n for other things
-                        $jobTable = 'a10job' . $today->format('Ymd');
-
-                        // use a max number that is smaller than 32bit int to keep consistency
-                        $jobPartitionKey = str_pad((2000000000 - time()) . "", 10, '0', STR_PAD_LEFT);
-                        $rst["jobTable"] = $jobTable;
-                        $rst["jobId"]    = $jobPartitionKey;
-                        $jobMessage      = json_encode($rst);
-
-                        // insert import data, must be < 640KB?
-                        $jobEntity = new Entity();
-                        $jobEntity->setPartitionKey($jobPartitionKey . '');
-                        $jobEntity->setRowKey($rst['tableName'] . "-" . $partitionKey);
-                        $jobEntity->addProperty("Message", null, $jobMessage);
-                        $this->tableRestProxy($jobTable)->insertEntity($jobTable, $jobEntity);
-                    } else {
-                        $rst['item'] = $items[0];
-                    }
+                if ($itemsCount <= 1) {
+                    $rst['item'] = $items[0];
                 }
+                
+                if (isset($postBody['notifyQueue'])) {
+                    unset($rst['item']);
+                    // reserve '10' to sort at top, reserve 0n for other things
+                    $jobTable = 'a10job' . $today->format('Ymd');
+    
+                    // use a max number that is smaller than 32bit int to keep consistency
+                    $jobPartitionKey = str_pad((2000000000 - time()) . "", 10, '0', STR_PAD_LEFT);
+                    $rst["jobTable"] = $jobTable;
+                    $rst["jobId"]    = $jobPartitionKey;
+                    $jobMessage      = json_encode($rst);
+    
+                    // insert import data, must be < 640KB?
+                    $jobEntity = new Entity();
+                    $jobEntity->setPartitionKey($jobPartitionKey . '');
+                    $jobEntity->setRowKey($rst['tableName'] . "-" . $partitionKey);
+                    $jobEntity->addProperty("Message", null, $jobMessage);
+                    $this->tableRestProxy($jobTable, $errors)->insertEntity($jobTable, $jobEntity);
+                    
+                }
+                
                 unset($rst['body']);
 
                 // main action
@@ -395,30 +400,28 @@ class AzureTable extends \Controllers\BaseSecuredController
                     $item = $rst['item'];
 
                     if (isset($item['delete'])) {
-                        $this->tableRestProxy($rst['tableName'])
+                        $this->tableRestProxy($rst['tableName'], $errors)
                             ->deleteEntity($rst['tableName'], $partitionKey, $item['RowKey']);
                     } else {
-                        $this->tableRestProxy($rst['tableName'])
+                        $this->tableRestProxy($rst['tableName'], $errors)
                             ->insertOrMergeEntity($rst['tableName'], $entity);
                     }
                 } else {
                     // handle multi-update
-                    $this->tableRestProxy($rst['tableName'])->batch($operations);
+                    $this->tableRestProxy($rst['tableName'], $errors)->batch($operations);
                 }
 
                 // if this should trigger queue that handle webhooks
                 if (isset($postBody['notifyQueue'])) {
-                    // if useNamePrefix is set, then apply prefix to queue name
                     $queueName = $postBody['notifyQueue'];
-                    if (isset($postBody['useNamePrefix'])) {
-                        $queueName = $rst['namePrefix'] . $queueName;
-                    }
                     $this->enqueue($queueName, $rst);
                 }
             } catch (ServiceException $e) {
                 $errors[] = ["message" => $e->getMessage(), "code" => $e->getCode()];
             }
         }
+        
+        $rst['errors'] = $errors;
 
         return $rst;
     }
@@ -445,7 +448,7 @@ class AzureTable extends \Controllers\BaseSecuredController
     /**
      * get table rest body
      */
-    public function tableRestProxy($tableName)
+    public function tableRestProxy($tableName, &$errors)
     {
         $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
         try {
@@ -464,9 +467,9 @@ class AzureTable extends \Controllers\BaseSecuredController
         return $proxy;
     }
 
-/**
- * insert queue message
- */
+    /**
+     * insert queue message
+     */
     public function enqueue($queueName, $rst)
     {
         $proxy = ServicesBuilder::getInstance()->createQueueService($this->connectionString);

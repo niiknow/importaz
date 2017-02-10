@@ -60,7 +60,7 @@ By convention, we introduced three additional parameter/features:
 
 POST BODY:
 ``` json
- { "items" : [...], "notifyQueue": "queueName", "useNamePrefix": true }
+ { "items" : [...], "notifyQueue": "queueName" }
 ```
 
 Example, let say you have the following parameters: @tableName ('products'), @pk (empty), @tenant ('acme'), and @environment ('prd').
