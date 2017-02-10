@@ -71,7 +71,6 @@ class AzureTable extends \Controllers\BaseSecuredController
         if (count($errors) <= 0) {
             try {
                 $options = new \MicrosoftAzure\Storage\Table\Models\QueryEntitiesOptions();
-                $options->setFilter($filter);
 
                 if (!is_null($top)) {
                     $options->setTop($top);
@@ -86,6 +85,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                     $options->setNextRowKey($nextrk);
                 }
 
+                $options->setFilter(\MicrosoftAzure\Storage\Table\Models\Filters\Filter::applyQueryString($filter));
                 $tableRestProxy = $this->tableRestProxy($tableName, $errors);
                 $rst            = $tableRestProxy->queryEntities($tableName, $options);
             } catch (ServiceException $e) {
