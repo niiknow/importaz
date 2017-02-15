@@ -28,7 +28,7 @@ php -S 0.0.0.0:8888 -t public
 To deploy:
 ```
 composer install
-composer update --no-dev
+composer update --no-dev --optimize-autoloader
 ```
 
 Example:
