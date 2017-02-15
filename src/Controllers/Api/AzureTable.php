@@ -135,7 +135,7 @@ class AzureTable extends \Controllers\BaseSecuredController
             $items    = $response["entities"];
             $result   = [
                 "nextpk" => $response["nextpk"],
-                "nextnk" => $$response["nextrk"],
+                "nextrk" => $$response["nextrk"],
             ];
 
             $result["items"] = $items;
