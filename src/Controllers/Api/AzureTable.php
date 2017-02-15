@@ -49,6 +49,66 @@ class AzureTable extends \Controllers\BaseSecuredController
     }
 
     /**
+     * execute query helper
+     * @param  string  $filter
+     * @param  string  $top
+     * @param  string  $select
+     * @param  string  $nextpk
+     * @param  string  $nextrk
+     * @return array
+     */
+    public function execQuery($filter, $top = null, $select = null, $nextpk = null, $nextrk = null)
+    {
+        $f3              = $this->f3;
+        $params          = $this->params;
+        $errors          = array();
+        $tableRst        = $this->getTableName($errors);
+        $tableName       = $tableRst['tableName'];
+        $result          = array();
+        $rst             = array();
+
+        if (is_null($filter)) {
+            $errors[] = ["message" => "$filter is required"];
+        }
+
+        if (count($errors) <= 0) {
+            $response = $this->doAzureTableQuery($tableName, $filter, $top, $select, $nextpk, $nextrk);
+            $json = $response->body;
+
+            if (!is_null($json) && isset($json["odata.error"])) {
+                $errors[] = $json["odata.error"];
+            }
+
+            if ($response->code > 200) {
+                $errors[] = ["code" => $response->code, "message" => "http error code"];
+            }
+        }
+
+        if (count($errors) <= 0) {
+            $items    = $response["entities"];
+            $result   = [
+                "nextpk" => $response["nextpk"],
+                "nextrk" => $$response["nextrk"],
+            ];
+
+            if (!is_null($items)) {
+                $result["items"] = $items;
+                $result["count"] = count($items);
+            }
+        } else {
+            $result = ["errors" => $errors];
+        }
+
+        if (is_null($items)) {
+            $result["items"] = array();
+        }
+        
+        $result["tableName"]  = $tableName;
+
+        return $result;
+    }
+
+    /**
      * perform azure table query
      * @param  string $tableName
      * @param  string $filter    
@@ -80,8 +140,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         }
         
         $response = $this->doGetJson($reqdata->url, $reqdata->headers, $query);
-        $response["json"] = json_decode($response->raw_body);
-        $json = $response["json"];
+        $json = $response->body;
         if (!is_null($json) && isset($json["value"])) {
             $response["entities"] = $json["value"];
             $response["nextpk"] = null;
@@ -97,56 +156,6 @@ class AzureTable extends \Controllers\BaseSecuredController
         }
 
         return $response;
-    }
-
-    /**
-     * execute query helper
-     * @param  string  $filter
-     * @param  string  $top
-     * @param  string  $select
-     * @param  string  $nextpk
-     * @param  string  $nextrk
-     * @return array
-     */
-    public function execQuery($filter, $top = null, $select = null, $nextpk = null, $nextrk = null)
-    {
-        $f3              = $this->f3;
-        $params          = $this->params;
-        $errors          = array();
-        $tableRst        = $this->getTableName($errors);
-        $tableName       = $tableRst['tableName'];
-        $result          = [ "items" => array()];
-        $rst             = array();
-
-        if (is_null($filter)) {
-            $errors[] = ["message" => "$filter is required"];
-        }
-
-        if (count($errors) <= 0) {
-            $response = $this->doAzureTableQuery($tableName, $filter, $top, $select, $nextpk, $nextrk);
-            $json = $response->json;
-
-            if (!is_null($json) && isset($json["odata.error"])) {
-                $errors[] = $json["odata.error"];
-            }
-        }
-
-        if (count($errors) <= 0) {
-            $items    = $response["entities"];
-            $result   = [
-                "nextpk" => $response["nextpk"],
-                "nextrk" => $$response["nextrk"],
-            ];
-
-            $result["items"] = $items;
-            $result["count"] = count($items);
-        } else {
-            $result = ["errors" => $errors];
-        }
-        
-        $result["tableName"]  = $tableName;
-
-        return $result;
     }
 
     /**
