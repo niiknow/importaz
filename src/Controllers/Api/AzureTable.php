@@ -49,6 +49,57 @@ class AzureTable extends \Controllers\BaseSecuredController
     }
 
     /**
+     * perform azure table query
+     * @param  string $tableName
+     * @param  string $filter    
+     * @param  string $top       
+     * @param  string $select    
+     * @param  string $nextpk    
+     * @param  string $nextrk    
+     * @return object            
+     */
+    public function doAzureTableQuery($tableName, $filter, $top, $select, $nextpk, $nextrk) {
+        $reqdata = $this->getAzureTableStorageData($tableName);
+        $query = [
+            "$filter"    => $filter
+        ];
+        if (!is_null($top)) {
+            $query["$top"] = $top;
+        }
+        
+        if (!is_null($select)) {
+            $query["$select"] = $select;
+        }
+
+        if (!is_null($nextpk)) {
+            $query["NextPartitionKey"] = $nextpk;
+        }
+        
+        if (!is_null($nextrk)) {
+            $query["NextRowKey"] = $nextrk;
+        }
+        
+        $response = $this->doGetJson($reqdata->url, $reqdata->headers, $query);
+        $response["json"] = json_decode($response->raw_body);
+        $json = $response["json"];
+        if (!is_null($json) && isset($json["value"])) {
+            $response["entities"] = $json["value"];
+            $response["nextpk"] = null;
+            $response["nextrk"] = null;
+
+            if (isset($rst->headers["x-ms-continuation-NextPartitionKey"])) {
+                $response["nextpk"] = $rst->headers["x-ms-continuation-NextPartitionKey"];
+            }
+
+            if (isset($rst->headers["x-ms-continuation-NextRowKey"])) {
+                $response["nextrk"] = $rst->headers["x-ms-continuation-NextRowKey"];
+            }
+        }
+
+        return $response;
+    }
+
+    /**
      * execute query helper
      * @param  string  $filter
      * @param  string  $top
@@ -64,57 +115,37 @@ class AzureTable extends \Controllers\BaseSecuredController
         $errors          = array();
         $tableRst        = $this->getTableName($errors);
         $tableName       = $tableRst['tableName'];
+        $result          = [ "items" => array()];
+        $rst             = array();
 
         if (is_null($filter)) {
             $errors[] = ["message" => "$filter is required"];
         }
+
         if (count($errors) <= 0) {
-            try {
-                $options = new \MicrosoftAzure\Storage\Table\Models\QueryEntitiesOptions();
+            $response = $this->doAzureTableQuery($tableName, $filter, $top, $select, $nextpk, $nextrk);
+            $json = $response->json;
 
-                if (!is_null($top)) {
-                    $options->setTop($top);
-                }
-                if (!is_null($select)) {
-                    $options->setSelectFields($select);
-                }
-                if (!is_null($nextpk)) {
-                    $options->setNextPartitionKey($nextpk);
-                }
-                if (!is_null($nextrk)) {
-                    $options->setNextRowKey($nextrk);
-                }
-
-                $options->setFilter(\MicrosoftAzure\Storage\Table\Models\Filters\Filter::applyQueryString($filter));
-                $tableRestProxy = $this->tableRestProxy($tableName, $errors);
-                $rst            = $tableRestProxy->queryEntities($tableName, $options);
-            } catch (ServiceException $e) {
-                $errors[] = ["message" => $e->getMessage(), "code" => $e->getCode()];
+            if (!is_null($json) && isset($json["odata.error"])) {
+                $errors[] = $json["odata.error"];
             }
         }
 
         if (count($errors) <= 0) {
-            $entities = $rst->getEntities();
-            $items    = array();
+            $items    = $response["entities"];
             $result   = [
-                "nextpk" => $rst->getNextPartitionKey(),
-                "nextnk" => $rst->getNextRowKey(),
+                "nextpk" => $response["nextpk"],
+                "nextnk" => $$response["nextrk"],
             ];
 
-            foreach ($entities as $entity) {
-                $properties = $entity->getProperties();
-                $item       = array();
-                foreach ($properties as $key => $value) {
-                    $item[$key] = $entity->getPropertyValue($key);
-                }
-                $items[] = $item;
-            }
             $result["items"] = $items;
             $result["count"] = count($items);
         } else {
             $result = ["errors" => $errors];
         }
+        
         $result["tableName"]  = $tableName;
+
         return $result;
     }
 

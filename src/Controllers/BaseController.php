@@ -16,6 +16,12 @@ class BaseController
         $this->params             = $params;
         $this->connectionString   = $f3->get('db.azstorage');
         $this->azDefaultPartition = $f3->get('db.azdpart');
+        $this->connectionStringData = array();
+        $parts = explode($this->connectionString, ";");
+        foreach ($parts as &$part) {
+            $iparts = explode("=");
+            $this->connectionStringData[$iparts[0]] = $iparts[1];
+        }
     }
 
     /**
@@ -145,5 +151,60 @@ class BaseController
         }
 
         return $rst . '0';
+    }
+
+    /**
+     * perform get request
+     * @param  string $url     
+     * @param  array  $headers 
+     * @param  array  $query   
+     * @return object          response
+     */
+    public function doGetJson($url, $headers, $query) 
+    {
+        $response = Unirest\Request::get($url, $headers, $query);
+        return $response;
+    }
+
+    /**
+     * [doPostRequest description]
+     * @param  string $url     
+     * @param  array  $headers 
+     * @param  array  $query   
+     * @param  array  $body   
+     * @return object          response
+     */
+    public function doPostJson($url, $headers, $query, $body) 
+    {
+        $headers['Content-Type'] = 'application/json';
+        $data = Unirest\Request\Body::json($data);
+        $response = Unirest\Request::post($url, $headers, $body);
+        return $response;
+    }
+
+    /**
+     * get azure table storage data
+     * @param  string $tableName
+     * @return array        headers
+     */
+    public function getAzureTableStorageData($tableName) 
+    {
+        // get authorization
+        $date = date("c", time());
+        $stringToSign = "$date\n/$account/$table";
+        $account = $this->connectionStringData["AccountName"];
+        $sig = base64_encode(hash_hmac("sha256", $stringToSign, base64_decode($this->connectionStringData["AccountKey"]), true));
+        $headers = [
+            "Authorization" => "SharedKeyLite $account:$sign",
+            "x-ms-date" => $date,
+            "Accept" => "application/json;odata=nometadata",
+            "x-ms-version" => "2016-05-31"
+        ];
+
+        return [
+            "url"     => "https://$account.table.core.windows.net/$tableName",
+            "account" => $account,
+            "headers" => $headers,
+        ];
     }
 }
