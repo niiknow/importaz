@@ -2,6 +2,8 @@
 
 namespace Controllers;
 
+use Unirest;
+
 class BaseController
 {
     /**
@@ -17,9 +19,9 @@ class BaseController
         $this->connectionString   = $f3->get('db.azstorage');
         $this->azDefaultPartition = $f3->get('db.azdpart');
         $this->connectionStringData = array();
-        $parts = explode($this->connectionString, ";");
+        $parts = explode(";", $this->connectionString);
         foreach ($parts as &$part) {
-            $iparts = explode("=");
+            $iparts = explode("=", $part);
             $this->connectionStringData[$iparts[0]] = $iparts[1];
         }
     }
@@ -162,23 +164,11 @@ class BaseController
      */
     public function doGetJson($url, $headers, $query) 
     {
-        $response = Unirest\Request::get($url, $headers, $query);
-        return $response;
-    }
+        if (isset($headers["Authorization"])) {
+            \Unirest\Request::defaultHeader("Authorization", $headers["Authorization"]);
+        }
 
-    /**
-     * [doPostRequest description]
-     * @param  string $url     
-     * @param  array  $headers 
-     * @param  array  $query   
-     * @param  array  $body   
-     * @return object          response
-     */
-    public function doPostJson($url, $headers, $query, $body) 
-    {
-        $headers['Content-Type'] = 'application/json';
-        $data = Unirest\Request\Body::json($data);
-        $response = Unirest\Request::post($url, $headers, $body);
+        $response = \Unirest\Request::get($url, $headers, $query);
         return $response;
     }
 
@@ -189,22 +179,23 @@ class BaseController
      */
     public function getAzureTableStorageData($tableName) 
     {
-        // get authorization
-        $date = date("c", time());
-        $stringToSign = "$date\n/$account/$table";
+        $date = gmdate('D, d M Y H:i:s', time()) . ' GMT';
         $account = $this->connectionStringData["AccountName"];
-        $sig = base64_encode(hash_hmac("sha256", $stringToSign, base64_decode($this->connectionStringData["AccountKey"]), true));
+        $stringToSign = "$date\n/$account/$tableName";
+        $accountKey = $this->connectionStringData["AccountKey"];
+        $sig = base64_encode(hash_hmac("sha256", $stringToSign, base64_decode($accountKey), true));
         $headers = [
-            "Authorization" => "SharedKeyLite $account:$sign",
+            "Authorization" => "SharedKeyLite $account:$sig",
             "x-ms-date" => $date,
             "Accept" => "application/json;odata=nometadata",
             "x-ms-version" => "2016-05-31"
         ];
 
-        return [
+        $rst = [
             "url"     => "https://$account.table.core.windows.net/$tableName",
             "account" => $account,
             "headers" => $headers,
         ];
+        return $rst;
     }
 }

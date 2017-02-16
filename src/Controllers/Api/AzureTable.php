@@ -73,12 +73,6 @@ class AzureTable extends \Controllers\BaseSecuredController
 
         if (count($errors) <= 0) {
             $response = $this->doAzureTableQuery($tableName, $filter, $top, $select, $nextpk, $nextrk);
-            $json = $response->body;
-
-            if (!is_null($json) && isset($json["odata.error"])) {
-                $errors[] = $json["odata.error"];
-            }
-
             if ($response->code > 200) {
                 $errors[] = ["code" => $response->code, "message" => "http error code"];
             }
@@ -118,8 +112,9 @@ class AzureTable extends \Controllers\BaseSecuredController
      * @param  string $nextrk    
      * @return object            
      */
-    public function doAzureTableQuery($tableName, $filter, $top, $select, $nextpk, $nextrk) {
+    public function doAzureTableQuery($tableName, $filter, $top = null, $select = null, $nextpk = null, $nextrk = null) {
         $reqdata = $this->getAzureTableStorageData($tableName);
+
         $query = [
             "$filter"    => $filter
         ];
@@ -139,23 +134,23 @@ class AzureTable extends \Controllers\BaseSecuredController
             $query["NextRowKey"] = $nextrk;
         }
         
-        $response = $this->doGetJson($reqdata->url, $reqdata->headers, $query);
-        $json = $response->body;
-        if (!is_null($json) && isset($json["value"])) {
-            $response["entities"] = $json["value"];
-            $response["nextpk"] = null;
-            $response["nextrk"] = null;
+        $response = $this->doGetJson($reqdata["url"], $reqdata["headers"], $query);
+        $rsp = get_object_vars($response);
+        $json = $rsp["body"];
+        if (!is_null($json) && !is_null($json->value)) {
+            $rsp["entities"] = $json->value;
+            $rsp["nextpk"] = null;
+            $rsp["nextrk"] = null;
 
-            if (isset($rst->headers["x-ms-continuation-NextPartitionKey"])) {
-                $response["nextpk"] = $rst->headers["x-ms-continuation-NextPartitionKey"];
+            if (isset($rsp->headers["x-ms-continuation-NextPartitionKey"])) {
+                $rsp["nextpk"] = $rsp->headers["x-ms-continuation-NextPartitionKey"];
             }
 
-            if (isset($rst->headers["x-ms-continuation-NextRowKey"])) {
-                $response["nextrk"] = $rst->headers["x-ms-continuation-NextRowKey"];
+            if (isset($rsp->headers["x-ms-continuation-NextRowKey"])) {
+                $rsp["nextrk"] = $rsp->headers["x-ms-continuation-NextRowKey"];
             }
         }
-
-        return $response;
+        return $rsp;
     }
 
     /**

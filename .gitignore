@@ -1,4 +1,4 @@
-.DS_STORE
+.DS_Store
 .phpintel/
 .env
 vendor/
@@ -6,4 +6,4 @@ vendor/
 *.log
 config/config.ini
 /tmp/cache/
-Archive.zip
+/dist/
