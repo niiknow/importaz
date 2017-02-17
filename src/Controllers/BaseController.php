@@ -2,8 +2,6 @@
 
 namespace Controllers;
 
-use Guzzle\Http\Client;
-
 class BaseController
 {
     /**
@@ -164,23 +162,33 @@ class BaseController
      */
     public function doGetJson($url, $inHeaders, $query) 
     {
-        $client = new Client();
-        $request = $client->get($url, $query);
+        $client = new \GuzzleHttp\Client(['headers' => ['Authorization' => $inHeaders['Authorization']]]);
+        $response = null;
 
-        // Setup the headers for the request
-        foreach ($inHeaders as $key => $value) {
-            $request->setHeader($key, $value);
+        try {
+            $response = $client->request('GET', $url, ['query' => $query, 'headers' => $inHeaders]);
+            $rawBody = $response->getBody()->getContents();
+            $result = json_decode($rawBody);
+        } catch(\GuzzleHttp\Exception\RequestException $e) {
+            if ($e->hasResponse()) {
+                $response = $e->getResponse();
+            }
         }
 
-        $response = $client->send($request);
-        $rawBody = $response->getBody()->getContents();
-        $result = json_decode($rawBody);
+        if (is_null($response)) {
+            return [
+                'raw_body' => null,
+                'code' => 503,
+                'body' => null,
+                'headers' => array()
+            ];
+        }
 
         return [
-            "raw_body" => $rawBody,
-            "code" => $response->getStatusCode(),
-            "body" => $result,
-            "headers" => $response->getHeaders()
+            'raw_body' => $rawBody,
+            'code' => $response->getStatusCode(),
+            'body' => $result,
+            'headers' => $response->getHeaders()
         ];
     }
 
@@ -192,21 +200,21 @@ class BaseController
     public function getAzureTableStorageData($tableName) 
     {
         $date = gmdate('D, d M Y H:i:s', time()) . ' GMT';
-        $account = $this->connectionStringData["AccountName"];
+        $account = $this->connectionStringData['AccountName'];
         $stringToSign = "$date\n/$account/$tableName";
-        $accountKey = $this->connectionStringData["AccountKey"];
-        $sig = base64_encode(hash_hmac("sha256", $stringToSign, base64_decode($accountKey), true));
+        $accountKey = $this->connectionStringData['AccountKey'];
+        $sig = base64_encode(hash_hmac('sha256', $stringToSign, base64_decode($accountKey), true));
         $headers = [
-            "Authorization" => "SharedKeyLite $account:$sig",
-            "x-ms-date" => $date,
-            "Accept" => "application/json;odata=nometadata",
-            "x-ms-version" => "2016-05-31"
+            'Authorization' => "SharedKeyLite $account:$sig",
+            'x-ms-date' => $date,
+            'Accept' => 'application/json;odata=nometadata',
+            'x-ms-version' => '2016-05-31'
         ];
 
         $rst = [
-            "url"     => "https://$account.table.core.windows.net/$tableName",
-            "account" => $account,
-            "headers" => $headers,
+            'url'     => "https://$account.table.core.windows.net/$tableName",
+            'account' => $account,
+            'headers' => $headers,
         ];
         return $rst;
     }

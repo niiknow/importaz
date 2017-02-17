@@ -15,22 +15,22 @@ class AzureTable extends \Controllers\BaseSecuredController
      */
     public function deleteTablePartition()
     {
-        $notifyQueue  = $this->getOrDefault("GET.notifyQueue", null);
-        $partitionKey = $this->params["partitionKey"];
-        $resultQuery  = $this->execQuery("PartitionKey eq '$partitionKey'", null, "PartitionKey,RowKey");
-        $items        = $queryResult["items"];
+        $notifyQueue  = $this->getOrDefault('GET.notifyQueue', null);
+        $partitionKey = $this->params['partitionKey'];
+        $resultQuery  = $this->execQuery("PartitionKey eq '$partitionKey'", null, 'PartitionKey,RowKey');
+        $items        = $queryResult['items'];
         foreach ($items as $item) {
-            $item["delete"] = true;
+            $item['delete'] = true;
         }
-        $postData = ["items" => $items];
+        $postData = ['items' => $items];
         if ($notifyQueue != null) {
-            $postData["notifyQueue"] = $notifyQueue;
+            $postData['notifyQueue'] = $notifyQueue;
         }
         $result = $this->execAction($postBody);
 
         // delete perform bulk 1000 items each time this method is called and return hasMoreItems
         // client should keep calling this method until hasMoreItems is false
-        $result["hasMoreItems"] = isset($resultQuery["nextrk"]);
+        $result['hasMoreItems'] = isset($resultQuery['nextrk']);
         $this->json($result);
     }
 
@@ -68,36 +68,36 @@ class AzureTable extends \Controllers\BaseSecuredController
         $rst             = array();
 
         if (is_null($filter)) {
-            $errors[] = ["message" => "$filter is required"];
+            $errors[] = ['message' => '$filter is required'];
         }
 
         if (count($errors) <= 0) {
             $response = $this->doAzureTableQuery($tableName, $filter, $top, $select, $nextpk, $nextrk);
             if ($response->code > 200) {
-                $errors[] = ["code" => $response->code, "message" => "http error code"];
+                $errors[] = ['code' => $response->code, 'message' => "http error code"];
             }
         }
 
         if (count($errors) <= 0) {
-            $items    = $response["entities"];
+            $items    = $response['entities'];
             $result   = [
-                "nextpk" => $response["nextpk"],
-                "nextrk" => $$response["nextrk"],
+                'nextpk' => $response['nextpk'],
+                'nextrk' => $response['nextrk'],
             ];
 
             if (!is_null($items)) {
-                $result["items"] = $items;
-                $result["count"] = count($items);
+                $result['items'] = $items;
+                $result['count'] = count($items);
             }
         } else {
-            $result = ["errors" => $errors];
+            $result = ['errors' => $errors];
         }
 
         if (is_null($items)) {
-            $result["items"] = array();
+            $result['items'] = array();
         }
         
-        $result["tableName"]  = $tableName;
+        $result['tableName']  = $tableName;
 
         return $result;
     }
@@ -116,37 +116,38 @@ class AzureTable extends \Controllers\BaseSecuredController
         $reqdata = $this->getAzureTableStorageData($tableName);
 
         $query = [
-            "$filter"    => $filter
+            '$filter'    => $filter
         ];
         if (!is_null($top)) {
-            $query["$top"] = $top;
+            $query['$top'] = $top;
         }
         
         if (!is_null($select)) {
-            $query["$select"] = $select;
+            $query['$select'] = $select;
         }
 
         if (!is_null($nextpk)) {
-            $query["NextPartitionKey"] = $nextpk;
+            $query['NextPartitionKey'] = $nextpk;
         }
         
         if (!is_null($nextrk)) {
-            $query["NextRowKey"] = $nextrk;
+            $query['NextRowKey'] = $nextrk;
         }
-        
-        $rsp = $this->doGetJson($reqdata["url"], $reqdata["headers"], $query);
-        $json = $rsp->body;
-        if (!is_null($json) && !is_null($json->value)) {
-            $rsp["entities"] = $json->value;
-            $rsp["nextpk"] = null;
-            $rsp["nextrk"] = null;
 
-            if (isset($rsp->headers["x-ms-continuation-NextPartitionKey"])) {
-                $rsp["nextpk"] = $rsp->headers["x-ms-continuation-NextPartitionKey"];
+        $rsp = $this->doGetJson($reqdata['url'], $reqdata['headers'], $query);
+        $json = $rsp['body'];
+        if (!is_null($json) && !is_null($json->value)) {
+            $rsp['entities'] = $json->value;
+            $rsp['nextpk'] = null;
+            $rsp['nextrk'] = null;
+            $headers = $rsp['headers'];
+
+            if (isset($headers['x-ms-continuation-NextPartitionKey'])) {
+                $rsp['nextpk'] = $headers['x-ms-continuation-NextPartitionKey'];
             }
 
-            if (isset($rsp->headers["x-ms-continuation-NextRowKey"])) {
-                $rsp["nextrk"] = $rsp->headers["x-ms-continuation-NextRowKey"];
+            if (isset($headers['x-ms-continuation-NextRowKey'])) {
+                $rsp['nextrk'] = $headers['x-ms-continuation-NextRowKey'];
             }
         }
         
@@ -185,7 +186,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         $actualTableName = $namePrefix . $tableName;
         $partitionKey    = $this->getOrDefault('GET.pk', $this->azDefaultPartition);
 
-        $result          = [ "tableName" => $actualTableName, "partitionKey" => $partitionKey, "namePrefix" => $namePrefix ];
+        $result          = [ 'tableName' => $actualTableName, 'partitionKey' => $partitionKey, 'namePrefix' => $namePrefix ];
         return $result;
     }
 
@@ -215,13 +216,13 @@ class AzureTable extends \Controllers\BaseSecuredController
         if ($itemsCount <= 1000) {
             $packages = ceil($itemsCount / 100);
             for ($i = 0; $i < $packages; $i++) {
-                $postBody["items"] = array_slice($items, $i * 100, 100);
+                $postBody['items'] = array_slice($items, $i * 100, 100);
                 $tran              = $this->execTable($tableName, $partitionKey, $postBody, $isDelete);
                 $transactions[]    = $tran;
                 // $count += $result["count"];
-                $errorCount += count($tran["errors"]);
+                $errorCount += count($tran['errors']);
                 foreach ($tran as $k => $v) {
-                    if ($k == "errors") {
+                    if ($k == 'errors') {
                         continue;
                     }
                     $result[$k] = $v;
@@ -230,16 +231,16 @@ class AzureTable extends \Controllers\BaseSecuredController
                 usleep(rand(10, 200));
             }
         } else {
-            $errors[]         = ["message" => "expected items count to be less than 1001 but got " . $itemsCount];
-            $result["errors"] = $errors;
+            $errors[]         = ['message' => 'expected items count to be less than 1001 but got ' . $itemsCount];
+            $result['errors'] = $errors;
         }
 
-        $result["errorCount"] = $errorCount;
-        $result["count"]      = $itemsCount;
-        $result["trans"]      = $transactions;
+        $result['errorCount'] = $errorCount;
+        $result['count']      = $itemsCount;
+        $result['trans']      = $transactions;
 
-        if (isset($postBody["errorRows"])) {
-            $result["errorRows"] = $postBody["errorRows"];
+        if (isset($postBody['errorRows'])) {
+            $result['errorRows'] = $postBody['errorRows'];
         }
         $this->json($result);
     }
@@ -273,9 +274,9 @@ class AzureTable extends \Controllers\BaseSecuredController
         foreach ($lines as $line) {
             $i = $i + 1;
             // fix product data issue
-            $myLine = str_replace(", ", ";", $line);
-            $myLine = str_replace(",", "|", $myLine);
-            $myLine = str_replace(";", ", ", $myLine);
+            $myLine = str_replace(', ', ';', $line);
+            $myLine = str_replace(',', '|', $myLine);
+            $myLine = str_replace(';', ', ', $myLine);
             $values = str_getcsv($myLine, '|', $enclosure, $escape);
 
             if (!$header) {
@@ -294,7 +295,7 @@ class AzureTable extends \Controllers\BaseSecuredController
             }
         }
 
-        return ["items" => $data, "errorRows" => join("\n", $errors)];
+        return ['items' => $data, 'errorRows' => join("\n", $errors)];
     }
 
     /**
@@ -313,23 +314,23 @@ class AzureTable extends \Controllers\BaseSecuredController
         $nameRegex = "/^[a-z][a-z0-9]{2,62}$/";
         // validate table name
         if (!preg_match($nameRegex, $tableName)) {
-            $errors[] = ["message" => "invalid tableName '$tableName' value"];
+            $errors[] = ['message' => "invalid tableName '$tableName' value"];
         }
 
         // validate partition key
         $nameRegex = "/[a-zA-Z0-9-_\.\~\,\! ]+/";
         if (!preg_match($nameRegex, $partitionKey)) {
-            $errors[] = ["message" => "invalid PartitionKey '$partitionKey' value"];
+            $errors[] = ['message' => "invalid PartitionKey '$partitionKey' value"];
         }
 
         if (!isset($postBody['items'])) {
-            $errors[] = ["message" => "items array is required"];
+            $errors[] = ['message' => 'items array is required'];
         }
         
         $items      = $postBody['items'];
         $itemsCount = count($items);
         if ($itemsCount > 100) {
-            $errors[] = ["message" => "expected items count to be less than 100 but got " . $itemsCount];
+            $errors[] = ['message' => 'expected items count to be less than 100 but got ' . $itemsCount];
         }
 
         $entity = null;
@@ -363,14 +364,14 @@ class AzureTable extends \Controllers\BaseSecuredController
                     }
 
                     if (!isset($item['RowKey'])) {
-                        $errors[] = ["message" => "$i required a RowKey"];
+                        $errors[] = ['message' => "$i required a RowKey"];
                         continue;
                     }
                 }
 
                 $rowKey = $item['RowKey'];
                 if (!preg_match($nameRegex, $rowKey)) {
-                    $errors[] = ["message" => "$i has invalid RowKey: $rowKey"];
+                    $errors[] = ['message' => "$i has invalid RowKey: $rowKey"];
                 }
 
                 if (isset($item['delete'])) {
@@ -381,13 +382,13 @@ class AzureTable extends \Controllers\BaseSecuredController
                     $entity->setRowKey($rowKey);
 
                     foreach ($item as $key => $value) {
-                        $excludes = array("delete", "RowKey", "PartitionKey", "Timestamp");
+                        $excludes = array('delete', 'RowKey', 'PartitionKey', 'Timestamp');
                         if (in_array($key, $excludes)) {
                             continue;
                         }
 
                         if (!preg_match('/[a-zA-Z0-9-_\.\~\,]+/', $key)) {
-                            $errors[] = ["message" => "$i column name $key is invalid"];
+                            $errors[] = ['message' => "$i column name $key is invalid"];
                             continue;
                         }
 
@@ -413,7 +414,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                     $jobTable = 'a10job' . $today->format('Ymd');
     
                     // use a max number that is smaller than 32bit int to keep consistency
-                    $jobPartitionKey = str_pad((2000000000 - time()) . "", 10, '0', STR_PAD_LEFT);
+                    $jobPartitionKey = str_pad((2000000000 - time()) . '', 10, '0', STR_PAD_LEFT);
                     $rst["jobTable"] = $jobTable;
                     $rst["jobId"]    = $jobPartitionKey;
                     $jobMessage      = json_encode($rst);
@@ -421,10 +422,9 @@ class AzureTable extends \Controllers\BaseSecuredController
                     // insert import data, must be < 640KB?
                     $jobEntity = new Entity();
                     $jobEntity->setPartitionKey($jobPartitionKey . '');
-                    $jobEntity->setRowKey($rst['tableName'] . "-" . $partitionKey);
-                    $jobEntity->addProperty("Message", null, $jobMessage);
+                    $jobEntity->setRowKey($rst['tableName'] . '-' . $partitionKey);
+                    $jobEntity->addProperty('message', null, $jobMessage);
                     $this->tableRestProxy($jobTable, $errors)->insertEntity($jobTable, $jobEntity);
-                    
                 }
                 
                 unset($rst['body']);
@@ -452,7 +452,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                     $this->enqueue($queueName, $rst);
                 }
             } catch (ServiceException $e) {
-                $errors[] = ["message" => $e->getMessage(), "code" => $e->getCode()];
+                $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
             }
         }
         
@@ -474,7 +474,7 @@ class AzureTable extends \Controllers\BaseSecuredController
 
         // validate tenant
         if (!preg_match('/^[a-z]+$/', $tenant)) {
-            $errors[] = ["message" => "invalid tenant '$tenant' value"];
+            $errors[] = ['message' => "invalid tenant '$tenant' value"];
         }
 
         return $tenant;
@@ -489,17 +489,17 @@ class AzureTable extends \Controllers\BaseSecuredController
         try {
             // check cache
             $cache = \Cache::instance();
-            if ($cache->exists("aztable-" . $tableName)) {
+            if ($cache->exists('aztable-' . $tableName)) {
                 return $proxy;
             }
 
             // Create table if not exists.
             $proxy->createTable($tableName);
         } catch (ServiceException $e) {
-            $errors[] = ["message" => $e->getMessage(), "code" => $e->getCode()];
+            $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
         }
 
-        $cache->set("aztable-" . $tableName, true, $this->getOrDefault("ttl.aztable", 600));
+        $cache->set('aztable-' . $tableName, true, $this->getOrDefault('ttl.aztable', 600));
         return $proxy;
     }
 
@@ -517,7 +517,7 @@ class AzureTable extends \Controllers\BaseSecuredController
             // storage explorer visibility
             $proxy->createMessage($queueName, base64_encode($jobMessage));
         } catch (ServiceException $e) {
-            $errors[] = ["message" => $e->getMessage(), "code" => $e->getCode()];
+            $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
         }
     }
 }

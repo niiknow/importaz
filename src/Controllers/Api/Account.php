@@ -28,7 +28,7 @@ class Account extends \Controllers\Api\AzureTable
     public function getAccountByName()
     {
         $this->params['tableName'] = 'account';
-        $name                      = $this->params["name"];
+        $name                      = $this->params['name'];
 
         return $this->execQuery("", 1000, null, $name, '_config');
     }
@@ -40,7 +40,7 @@ class Account extends \Controllers\Api\AzureTable
     public function getAccountUsers()
     {
         $this->params['tableName'] = 'account';
-        $name                      = $this->params["name"];
+        $name                      = $this->params['name'];
 
         // return $this->execQuery("PartitionKey eq '$name' and RowKey ne '_config'");
         return $this->execQuery("", 1000, null, $name);
@@ -54,10 +54,10 @@ class Account extends \Controllers\Api\AzureTable
     public function getAccountByUserEmail()
     {
         $this->params['tableName'] = 'account';
-        $name                      = $this->params["name"];
+        $name                      = $this->params['name'];
         $email                     = $this->getOrDefault('GET.email', '');
         if (empty($email)) {
-            $this->json(["error" => "email query argument is required"], ["http_status" => 400]);
+            $this->json(['error' => 'email query argument is required'], ['http_status' => 400]);
             return;
         }
         // slugify user
@@ -75,10 +75,10 @@ class Account extends \Controllers\Api\AzureTable
     public function createOrUpdateAccountPermissionForUserEmail()
     {
         $this->params['tableName'] = 'account';
-        $name                      = $this->params["name"];
+        $name                      = $this->params['name'];
         $email                     = $this->getOrDefault('GET.email', '');
         if (empty($email)) {
-            $this->json(["error" => "email query argument is required"], ["http_status" => 400]);
+            $this->json(['error' => 'email query argument is required'], ['http_status' => 400]);
             return;
         }
 
@@ -91,7 +91,7 @@ class Account extends \Controllers\Api\AzureTable
         $data               = [
             "items" => [$postBody],
         ];
-        $result = $this->execTable("account", $name, $data);
+        $result = $this->execTable('account', $name, $data);
         return $this->json($result);
     }
 
@@ -106,12 +106,12 @@ class Account extends \Controllers\Api\AzureTable
             $postBody = json_decode($this->f3->BODY, true);
         }
 
-        $postBody['RowKey']   = "_config";
+        $postBody['RowKey']   = '_config';
         $postBody['deleteAt'] = $deleteAt;
         $data                 = [
             "items" => [$postBody],
         ];
-        $result = $this->execTable("account", $name, $data);
+        $result = $this->execTable('account', $name, $data);
         return $this->json($result);
     }
 

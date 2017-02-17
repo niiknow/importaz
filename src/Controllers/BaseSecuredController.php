@@ -22,7 +22,7 @@ class BaseSecuredController extends BaseController
         $tsField   = $hdrs[1]; // in seconds
         $signature = $hdrs[2]; // base64 encoded
 
-        $users = $this->getOrDefault("api_users", []);
+        $users = $this->getOrDefault('api_users', []);
         if (isset($users[$apiUser])) {
             $algo     = $this->getOrDefault('security.algo', 'sha256');
             $passwerd = $users[$apiUser];
@@ -33,11 +33,11 @@ class BaseSecuredController extends BaseController
                 return;
             }
 
-            $this->f3->error('403', "X-AUTH header hmac validation failed");
+            $this->f3->error('403', 'X-AUTH header hmac validation failed');
             return;
         }
 
-        $this->f3->error('403', "X-AUTH user is invalid");
+        $this->f3->error('403', 'X-AUTH user is invalid');
         return;
     }
 }

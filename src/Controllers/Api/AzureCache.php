@@ -16,7 +16,7 @@ class AzureCache extends \Controllers\Api\AzureTable
     public function getCache()
     {
         $this->params['tableName'] = 'cache';
-        $name                      = $this->params["name"];
+        $name                      = $this->params['name'];
         $rowKey                    = time();
         $query                     = "(PartitionKey eq '$name') and (RowKey le '$rowKey')";
 
@@ -31,20 +31,20 @@ class AzureCache extends \Controllers\Api\AzureTable
     {
         
         $this->params['tableName'] = 'cache';
-        $name                      = $this->params["name"];
-        $ttl                       = $this->params["ttl"];
+        $name                      = $this->params['name'];
+        $ttl                       = $this->params['ttl'];
         $expiresAt                 = time() + $ttl;
         $rowKey                    = PHP_INT_MAX - $expiresAt;
 
         $postBody = [
-            "RowKey"          =>  $rowKey,
-            "value"           =>  $this->getOrDefault("GET.v", $this->f3->BODY),
-            "ttl"             =>  $ttl,
-            "expAt"           =>  date('c', $expiresAt);
+            'RowKey'          =>  $rowKey,
+            'value'           =>  $this->getOrDefault('GET.v', $this->f3->BODY),
+            'ttl'             =>  $ttl,
+            'expAt'           =>  date('c', $expiresAt);
         ];
 
         $data                 = [
-            "items"   => [$postBody],
+            'items'   => [$postBody],
         ];
         $result = $this->execTable('cache', $name, $data);
         return $this->json($result);
