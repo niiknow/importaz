@@ -134,9 +134,8 @@ class AzureTable extends \Controllers\BaseSecuredController
             $query["NextRowKey"] = $nextrk;
         }
         
-        $response = $this->doGetJson($reqdata["url"], $reqdata["headers"], $query);
-        $rsp = get_object_vars($response);
-        $json = $rsp["body"];
+        $rsp = $this->doGetJson($reqdata["url"], $reqdata["headers"], $query);
+        $json = json_decode($rsp["raw_body"]);
         if (!is_null($json) && !is_null($json->value)) {
             $rsp["entities"] = $json->value;
             $rsp["nextpk"] = null;
