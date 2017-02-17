@@ -2,7 +2,7 @@
 
 namespace Controllers;
 
-use Unirest;
+use Guzzle\Http\Client;
 
 class BaseController
 {
@@ -164,80 +164,23 @@ class BaseController
      */
     public function doGetJson($url, $inHeaders, $query) 
     {
-        if (strpos($url, '?') !== false) {
-            $url .= '&';
-        } else {
-            $url .= '?';
-        }
-
-        $url .= http_build_query($query);
-
-        // Initiate cURL
-        $curl = curl_init();
+        $client = new Client();
+        $request = $client->get($url, $query);
 
         // Setup the headers for the request
-        $headers_local = array();
         foreach ($inHeaders as $key => $value) {
-            $headers_local[] = $value['key'] . ": " . $value['value'];
-        }
-        
-        // Setup information about the cURL request
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers_local);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 300);
-        curl_setopt($curl, CURLOPT_MAXREDIRS, 10);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($curl, CURLOPT_HEADER, true);
-
-        if (substr($url, 0, 5) == 'https') {
-            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
+            $request->setHeader($key, $value);
         }
 
-        $response   = curl_exec($curl);
-        $error      = curl_error($curl);
-        if ($error) {
-            throw new Exception($error);
-        }
-
-        $info       = curl_getinfo($curl);
-
-        // Split the full response in its headers and body
-        $header_size = $info['header_size'];
-        $raw_headers = substr($response, 0, $header_size);
-        $raw_body    = substr($response, $header_size);
-        $http_code   = $info['http_code'];
-
-        curl_close($curl);
-
-        // parse header
-        $key = '';
-        $headers = array();
-        foreach (explode("\n", $raw_headers) as $i => $h) {
-            $h = explode(':', $h, 2);
-            if (isset($h[1])) {
-                if (!isset($headers[$h[0]])) {
-                    $headers[$h[0]] = trim($h[1]);
-                } elseif (is_array($headers[$h[0]])) {
-                    $headers[$h[0]] = array_merge($headers[$h[0]], array(trim($h[1])));
-                } else {
-                    $headers[$h[0]] = array_merge(array($headers[$h[0]]), array(trim($h[1])));
-                }
-                $key = $h[0];
-            } else {
-                if (substr($h[0], 0, 1) == "\t") {
-                    $headers[$key] .= "\r\n\t".trim($h[0]);
-                } elseif (!$key) {
-                    $headers[0] = trim($h[0]);
-                }
-            }
-        }
+        $response = $client->send($request);
+        $rawBody = $response->getBody()->getContents();
+        $result = json_decode($rawBody);
 
         return [
-            "code" => $http_code,
-            "raw_body" => $raw_body,
-            "headers" => $headers
+            "raw_body" => $rawBody,
+            "code" => $response->getStatusCode(),
+            "body" => $result,
+            "headers" => $response->getHeaders()
         ];
     }
 

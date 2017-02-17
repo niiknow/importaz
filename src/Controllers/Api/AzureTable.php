@@ -135,7 +135,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         }
         
         $rsp = $this->doGetJson($reqdata["url"], $reqdata["headers"], $query);
-        $json = json_decode($rsp["raw_body"]);
+        $json = $rsp->body;
         if (!is_null($json) && !is_null($json->value)) {
             $rsp["entities"] = $json->value;
             $rsp["nextpk"] = null;
@@ -149,6 +149,7 @@ class AzureTable extends \Controllers\BaseSecuredController
                 $rsp["nextrk"] = $rsp->headers["x-ms-continuation-NextRowKey"];
             }
         }
+        
         return $rsp;
     }
 
