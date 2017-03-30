@@ -356,13 +356,6 @@ class AzureTable extends \Controllers\BaseSecuredController
                         $item['RowKey'] = $item['id'];
                     }
 
-                    // convert ean or upc to RowKey
-                    if (isset($item['ean'])) {
-                        $item['RowKey'] = str_pad($item['ean'], 13, '0', STR_PAD_LEFT);
-                    } elseif (isset($item['upc'])) {
-                        $item['RowKey'] = str_pad($item['upc'], 13, '0', STR_PAD_LEFT);
-                    }
-
                     if (!isset($item['RowKey'])) {
                         $errors[] = ['message' => "$i required a RowKey"];
                         continue;
