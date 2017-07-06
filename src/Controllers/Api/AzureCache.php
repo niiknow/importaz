@@ -15,7 +15,7 @@ class AzureCache extends \Controllers\Api\AzureTable
      */
     public function getCache()
     {
-        $this->params['tableName'] = 'cache';
+        $this->params['tableName'] = 'cache' . date("Ym");
         $name                      = $this->params['name'];
         $rowKey                    = (9007199254740991 - time()) . '';
         $query                     = "(PartitionKey eq '$name') and (RowKey le '$rowKey')";
@@ -30,7 +30,7 @@ class AzureCache extends \Controllers\Api\AzureTable
     public function setCache()
     {
         
-        $this->params['tableName'] = 'cache';
+        $this->params['tableName'] = 'cache' . date("Ym");
         $name                      = $this->params['name'];
         $ttl                       = $this->getOrDefault('GET.ttl', 600);
         $expiresAt                 = time() + $ttl;
