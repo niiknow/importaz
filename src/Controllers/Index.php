@@ -33,7 +33,6 @@ class Index extends BaseController
             $validLength = 60 * 60; // valid for 1 hours
             $sig         = $this->generateSignature($passwerd, $time, $validLength, $apiUser, $algo);
             echo $sig;
-            echo "hi";
             return;
         }
 
