@@ -54,9 +54,9 @@ https://github.com/niiknow/importaz/blob/master/config/routes-api.ini
 * @tableName - the table to perform operation
 By convention, we introduced three additional parameter/features:
 
-1. *pk* - partition key, default is 'main'.  Use this like having multiple workspaces.
-2. *tenant* - the tenant code, default is 'a'.  Use this for multi-tenancy.
-3. *environment* - we use number to identify environments: dev (39), tst (37), uat (35), stg (33), and prd (31).  This reserved a00-a29 for internal table naming.  These tables would, obviously, be sorted at the top.  Environment can be setup in a file called config/config.ini, which has example and documenation here (https://github.com/niiknow/importaz/blob/master/config/config.example.ini) 
+1. *pk* - partition key, default is '1default'.  Allow for multiple workspaces.
+2. *tenant* - the tenant code, default is 'a'.  Allow for multi-tenancy.
+3. *environment* - we use number to identify environments: dev (79), tst (77), uat (75), stg (73), and prd (71).  This reserved a00-a69 for internal table naming.  These tables would, obviously, be sorted at the top.  Environment can be setup in a file called config/config.ini, which has example and documenation here (https://github.com/niiknow/importaz/blob/master/config/config.example.ini) 
 
 POST BODY:
 ``` json
@@ -65,9 +65,9 @@ POST BODY:
 
 Example, let say you have the following parameters: @tableName ('products'), @pk (empty), @tenant ('acme'), and @environment ('prd').
 
-Your destination table would be: *acme31products*
+Your destination table would be: *acme71products*
 
-All items will be imported into the "main" partition.  All items (including *delete*) must include one of the following required fields: *rowKey*, *id*, *ean*, or *upc*.
+All items will be imported into the "1default" partition.  All items (including *delete*) must include one of the following required fields: *rowKey*, *id*, *ean*, or *upc*.
 
 To delete an item, include property called *delete* and set to true or anything.
 

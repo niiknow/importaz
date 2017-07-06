@@ -35,25 +35,26 @@ class BaseController
     /**
      * validate the signature of the timestamp
      */
-    public function isValidSignature($tsField, $signatureBase64, $sharedSecret, $algo = 'sha256')
+    public function isValidSignature($sharedSecret, $payload, $algo = 'sha256')
     {
-        // $tsField is timestamp,validLength
-        $parts       = explode(",", $tsField);
+        $parts       = explode(":", $payload);
         $ts          = $parts[0];
         $validLength = $parts[1];
         if ($ts < (time() - $validLength)) {
             return false;
         }
-        $key = $this->generateSignature($ts, $validLength, $sharedSecret, $algo);
-        return ($key === $signatureBase64);
+
+        $key = $this->generateSignature($sharedSecret, $ts, $validLength, $parts[2], $algo);
+        return ($key === $parts[3]);
     }
 
     /**
      * generate signature
      */
-    public function generateSignature($timestamp, $validLength, $sharedSecret, $algo = 'sha256')
+    public function generateSignature($sharedSecret, $timestamp, $validLength=3600, $data="", $algo = 'sha256')
     {
-        return base64_encode(hash_hmac($algo, $timestamp . ',' . $validLength, $sharedSecret, true));
+        $str = $timestamp . ':' . $validLength . ':' . $data;
+        return base64_encode($str) . base64_encode(hash_hmac($algo, $str, $sharedSecret, true));
     }
 
     /**
@@ -137,7 +138,7 @@ class BaseController
         $env = $this->getOrDefault('app.env', 'dev');
 
         // use 3 to prevent system table conflict
-        $rst = '3';
+        $rst = '7';
         if ($env == 'dev') {
             return $rst . '9';
         } elseif ($env == 'tst') {

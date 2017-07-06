@@ -6,9 +6,9 @@
     "prefer-stable": true,
     "require": {
         "php" : "^5.6 || ^7.0",
-        "bcosca/fatfree": "^3.5",
-        "respect/validation": "^1.1",
-        "microsoft/windowsazure": "^0.5.0"
+        "bcosca/fatfree": "^3.6.2",
+        "respect/validation": "^1.1.12",
+        "microsoft/windowsazure": "^0.5.3"
     },
     "license": "MIT",
     "authors": [

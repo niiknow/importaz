@@ -17,12 +17,12 @@ class Index extends BaseController
      */
     public function hmac()
     {
-        if ($this->getOrDefault('GET.user', null) == null) {
+        $apiUser = $this->getOrDefault('GET.user', null);
+        if ($apiUser == null) {
             echo 'OK';
             return;
         }
 
-        $apiUser = $this->params['user'];
         // example generating api signature
         if ($this->getOrDefault('app.env', 'dev') === 'dev') {
 
@@ -31,8 +31,8 @@ class Index extends BaseController
             $passwerd    = $users[$apiUser];
             $time        = time();
             $validLength = 60 * 60; // valid for 1 hours
-            $sig         = $this->generateSignature($time, $validLength, base64_encode($passwerd), $algo);
-            echo $apiUser . ':' . $time . ',' . $validLength . ':' . $sig;
+            $sig         = $this->generateSignature(base64_encode($passwerd), $time, $validLength, $apiUser, $algo);
+            echo  $time . ':' . $validLength . ':' . $apiUser . ':' . $sig;
             return;
         }
 

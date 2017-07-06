@@ -18,9 +18,7 @@ class BaseSecuredController extends BaseController
 
         // split to timestamp and signature
         $hdrs      = explode(':', $hdr);
-        $apiUser   = $hdrs[0];
-        $tsField   = $hdrs[1]; // in seconds
-        $signature = $hdrs[2]; // base64 encoded
+        $apiUser   = $hdrs[2];
 
         $users = $this->getOrDefault('api_users', []);
         if (isset($users[$apiUser])) {
@@ -29,7 +27,7 @@ class BaseSecuredController extends BaseController
 
             // sharedSecret is encoded to base64 before validation
             if (isset($passwerd)
-                && $this->isValidSignature($tsField, $signature, $passwerd, $algo)) {
+                && $this->isValidSignature($passwerd, $payload, $algo)) {
                 return;
             }
 
