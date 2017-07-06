@@ -39,13 +39,13 @@ class BaseController
     {
         $parts       = explode(":", $payload);
         $ts          = $parts[0];
-        $validLength = $parts[1];
+        $validLength = intval($parts[1]);
         if ($ts < (time() - $validLength)) {
             return false;
         }
 
-        $key = $this->generateSignature($sharedSecret, $ts, $validLength, $parts[2], $algo);
-        return ($key === $parts[3]);
+        $sig = $this->generateSignature($sharedSecret, $ts, $validLength, $parts[2], $algo);
+        return ($sig === $payload);
     }
 
     /**
@@ -54,7 +54,7 @@ class BaseController
     public function generateSignature($sharedSecret, $timestamp, $validLength=3600, $data="", $algo = 'sha256')
     {
         $str = $timestamp . ':' . $validLength . ':' . $data;
-        return base64_encode($str) . base64_encode(hash_hmac($algo, $str, $sharedSecret, true));
+        return $str . ':' . base64_encode(hash_hmac($algo, $str, $sharedSecret, true));
     }
 
     /**

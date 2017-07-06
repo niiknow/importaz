@@ -31,8 +31,9 @@ class Index extends BaseController
             $passwerd    = $users[$apiUser];
             $time        = time();
             $validLength = 60 * 60; // valid for 1 hours
-            $sig         = $this->generateSignature(base64_encode($passwerd), $time, $validLength, $apiUser, $algo);
-            echo  $time . ':' . $validLength . ':' . $apiUser . ':' . $sig;
+            $sig         = $this->generateSignature($passwerd, $time, $validLength, $apiUser, $algo);
+            echo $sig;
+            echo "hi";
             return;
         }
 
