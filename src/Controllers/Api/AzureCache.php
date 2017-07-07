@@ -32,8 +32,10 @@ class AzureCache extends \Controllers\Api\AzureTable
     $result                    = null;
 
     if ($this->cache->exists("app-$$tableName-$name", $result)) {
-      echo $result;
-      return;
+      if (!is_null($result) && strlen($result) > 0) {
+        echo $result;
+        return;
+      }
     }
 
     $result = $this->execQuery($query, 1);
