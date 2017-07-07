@@ -32,15 +32,16 @@ class AzureCache extends \Controllers\Api\AzureTable
     $result                    = null;
 
     if ($this->cache->exists("app-$$tableName-$name", $result)) {
-      if (!is_null($result) && strlen($result) > 0) {
-        echo $result;
-        return;
-      }
+      echo $result;
+      return;
     }
 
     $result = $this->execQuery($query, 1);
-    if ($result['item']) {
-      echo $result['item']['value'];
+    
+    if ($result['items'] && is_array($result['items']) && $result['items'][0]) {
+      // use low cache ttl here to provide better qos with azure origin
+      $this->cache->set("app-$$tableName-$name", $result['items'][0]->value, 2);
+      echo $result['items'][0]->value;
       return;
     }
   }
