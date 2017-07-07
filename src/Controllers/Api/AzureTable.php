@@ -2,10 +2,9 @@
 
 namespace Controllers\Api;
 
-use MicrosoftAzure\Storage\Common\ServiceException;
+use MicrosoftAzure\Storage\Common\ServicesBuilder;
 use MicrosoftAzure\Storage\Table\Models\BatchOperations;
 use MicrosoftAzure\Storage\Table\Models\Entity;
-use WindowsAzure\Common\ServicesBuilder;
 
 class AzureTable extends \Controllers\BaseSecuredController
 {
@@ -408,7 +407,8 @@ class AzureTable extends \Controllers\BaseSecuredController
           $queueName = $postBody['notifyQueue'];
           $this->enqueue($queueName, $rst);
         }
-      } catch (ServiceException $e) {
+      } catch (\MicrosoftAzure\Storage\Common\Exceptions\ServiceException $e) {
+        $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
         $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
       }
     }
@@ -452,7 +452,7 @@ class AzureTable extends \Controllers\BaseSecuredController
 
       // Create table if not exists.
       $proxy->createTable($tableName);
-    } catch (ServiceException $e) {
+    } catch (\MicrosoftAzure\Storage\Common\Exceptions\ServiceException $e) {
       $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
     }
 
@@ -473,7 +473,9 @@ class AzureTable extends \Controllers\BaseSecuredController
       // must base64 encode to ensure MS cloud
       // storage explorer visibility
       $proxy->createMessage($queueName, base64_encode($jobMessage));
-    } catch (ServiceException $e) {
+
+    } catch (\MicrosoftAzure\Storage\Common\Exceptions\ServiceException $e) {
+      $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
       $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
     }
   }
