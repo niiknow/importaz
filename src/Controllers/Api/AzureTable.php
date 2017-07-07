@@ -450,8 +450,10 @@ class AzureTable extends \Controllers\BaseSecuredController
       return $proxy;
     }
 
-    // Create table if not exists.
-    @$proxy->createTable($tableName);
+    if (!@$proxy->getTable($tableName)) // exception is thrown when getTable is called
+    {
+      $proxy->createTable($table);
+    }
 
     $cache->set('aztable-' . $tableName, true, $this->getOrDefault('ttl.aztable', 600));
     return $proxy;
