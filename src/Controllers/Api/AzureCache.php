@@ -31,8 +31,8 @@ class AzureCache extends \Controllers\Api\AzureTable
     $result = $this->execQuery($query, 1);
 
     if ($result['items'] && is_array($result['items']) && $result['items'][0]) {
-      $obj = $result['item'][0];
-      if (time() > $obj->ttlx) {
+      $obj = $result['items'][0];
+      if (time() > (int)$obj->ttlx) {
         return;
       }
 
@@ -61,9 +61,9 @@ class AzureCache extends \Controllers\Api\AzureTable
     $postBody = [
       'RowKey' => $rowKey,
       'value'  => $this->getOrDefault('GET.v', $this->f3->BODY),
-      'ttl'    => $ttl,
+      'ttl'    => $ttl . '',
       'dtc'    => date('Y-m-d h:i:s A', $time - 21600),
-      'ttlx'   => $time + $ttl, // unix expired time
+      'ttlx'   => ($time + $ttl) . '', // unix expired time
     ];
 
     $data = [
@@ -75,7 +75,4 @@ class AzureCache extends \Controllers\Api\AzureTable
     $this->cache->set("app-$$tableName-$name", $postBody['value'], 2);
     echo $postBody['value'];
   }
-}
-{
-
 }
