@@ -1,24 +1,24 @@
 # importaz
-We were looking for a cheap, low to no-maintenance (cloud), and high performance document database that will notify you when a record has changed.  
+In search for a cheap, low to no-maintenance (cloud), and high performance document database that will notify you when a record has changed.  
 
 # Goal
 This library aim to create a RESTful service endpoint to extend Azure Storage, especially Azure Table Storage.
 
-* Ability to CRUD and perform BULK of Azure Table Storage in a single method.  Azure Table Storage BULK limit you to only 100 records batch.  We struggled with this at the beginning, but after much considerations, we realized that we don't need/want to import very large amount of records.  Since we would like to notify all changes, having large bulk import will be harder to work with down the road.
+* Ability to CRUD and perform BULK of Azure Table Storage in a single method.  Azure Table Storage BULK limit you to only 100 records batch.
 
 * Ability to notify record change with Azure Storage Queue.
 This is going to be really easy since Azure Storage Queue can trigger Azure Cloud Functions.
 
 * Secure API endpoint.
 Security is of utmost important.  We start with a very basic HMAC signing security.  This allow for easy integration on any Serverless platform.  Example: 
-    1. We can insert some big file into s3.
+    1. You can insert some big file into s3.
     2. This trigger a lambda function to perform import.
-    3. We split the file into multiple of 100 items and import each sequentially.
+    3. You would split the file into multiple of 100 items and import each sequentially.
     4. Success result in an original-file-name-batch-n-of-x.log
     5. Failure result in filename-batch-n-of-x.err.  This file maybe queued up for retry at a later time.
-    6. We have audit logs of our import.
+    6. Finally, there will be audit logs of the import.
 
-* For future enhancements, we may build other microservices to handle better API Authentication.  We can simply use Firebase, Amazon Cognito with Lambda, or even Mashape Kong.
+* For future enhancements, you can build other microservices to handle better API Authentication.  You can simply use Firebase, Amazon Cognito with Lambda, or even Mashape Kong.
 
 To run:
 ```
@@ -44,7 +44,7 @@ curl -i -X POST -H "Content-Type: application/json" http://localhost:8888/api/ta
         "blah": "blah",
         "col2": "hi"
     }]
-}' -H "X_AUTH: apiUserName:timestamp_in_seconds,valid_duration_in_seconds:our_hmac_signature"
+}' -H "X_AUTH: timestamp_in_seconds:valid_duration_in_seconds:apiUserName:our_hmac_signature_in_base64"
 ```
 
 ## API explain
@@ -56,7 +56,7 @@ By convention, we introduced three additional parameter/features:
 
 1. *pk* - partition key, default is '1default'.  Allow for multiple workspaces.
 2. *tenant* - the tenant code, default is 'a'.  Allow for multi-tenancy.
-3. *environment* - we use number to identify environments: dev (79), tst (77), uat (75), stg (73), and prd (71).  This reserved a00-a69 for internal table naming.  These tables would, obviously, be sorted at the top.  Environment can be setup in a file called config/config.ini, which has example and documenation here (https://github.com/niiknow/importaz/blob/master/config/config.example.ini) 
+3. *environment* - are identified as a number in the table name: dev (79), tst (77), uat (75), stg (73), and prd (71).  This reserved a00-a69 for internal table naming.  These tables would, obviously, be sorted at the top.  Environment can be setup in a file called config/config.ini, which has example and documenation here (https://github.com/niiknow/importaz/blob/master/config/config.example.ini) 
 
 POST BODY:
 ``` json
@@ -67,7 +67,7 @@ Example, let say you have the following parameters: @tableName ('products'), @pk
 
 Your destination table would be: *acme71products*
 
-All items will be imported into the "1default" partition.  All items (including *delete*) must include one of the following required fields: *rowKey*, *id*, *ean*, or *upc*.
+All items will be imported into the "_default" partition.  All items (including *delete*) must include one of the following required fields: *rowKey*, *id*, *ean*, or *upc*.
 
 To delete an item, include property called *delete* and set to true or anything.
 
