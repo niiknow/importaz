@@ -17,8 +17,7 @@ class AzureCache extends \Controllers\Api\AzureTable
   {
     $this->params['tableName'] = 'cache' . date("Ym");
     $name                      = $this->params['name'];
-    $rowKey                    = (9007199254740991 - time()) . '';
-    $query                     = "(PartitionKey eq '$name') and (RowKey le '$rowKey')";
+    $query                     = "PartitionKey eq '$name'";
     $errors                    = array();
     $tableRst                  = $this->getTableName($errors);
     $tableName                 = $tableRst['tableName'];
@@ -32,9 +31,14 @@ class AzureCache extends \Controllers\Api\AzureTable
     $result = $this->execQuery($query, 1);
 
     if ($result['items'] && is_array($result['items']) && $result['items'][0]) {
+      $obj = $result['item'][0];
+      if (time() > $obj->ttlx) {
+        return;
+      }
+
       // use low cache ttl here to provide better qos with azure origin
-      $this->cache->set("app-$$tableName-$name", $result['items'][0]->value, 2);
-      echo $result['items'][0]->value;
+      $this->cache->set("app-$$tableName-$name", $obj->value, 2);
+      echo $obj->value;
       return;
     }
   }
@@ -48,8 +52,8 @@ class AzureCache extends \Controllers\Api\AzureTable
     $this->params['tableName'] = 'cache' . date("Ym");
     $name                      = $this->params['name'];
     $ttl                       = $this->getOrDefault('GET.ttl', 600);
-    $expiresAt                 = time() + $ttl;
-    $rowKey                    = (9007199254740991 - $expiresAt) . '';
+    $time                      = time();
+    $rowKey                    = (9007199254740991 - $time) . '';
     $errors                    = array();
     $tableRst                  = $this->getTableName($errors);
     $tableName                 = $tableRst['tableName'];
@@ -58,7 +62,8 @@ class AzureCache extends \Controllers\Api\AzureTable
       'RowKey' => $rowKey,
       'value'  => $this->getOrDefault('GET.v', $this->f3->BODY),
       'ttl'    => $ttl,
-      'expAt'  => date('c', $expiresAt),
+      'dtc'    => date('Y-m-d h:i:s A', $time - 21600),
+      'ttlx'   => $time + $ttl, // unix expired time
     ];
 
     $data = [
@@ -67,7 +72,10 @@ class AzureCache extends \Controllers\Api\AzureTable
     $result = $this->execTable($tableName, $name, $data);
 
     // use low cache ttl here to provide better qos with azure origin
-    $this->cache->set("app-$$tableName-$name", $postBody['value'], 5);
+    $this->cache->set("app-$$tableName-$name", $postBody['value'], 2);
     echo $postBody['value'];
   }
+}
+{
+
 }
