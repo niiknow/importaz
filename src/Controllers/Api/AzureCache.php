@@ -32,11 +32,13 @@ class AzureCache extends \Controllers\Api\AzureTable
     $result                    = null;
 
     if ($this->cache->exists("app-$$tableName-$name", $result)) {
-      return $this->json($result);
+      return $result;
     }
 
     $result = $this->execQuery($query, 1);
-    return $this->json($result);
+    if ($result['item']) {
+      echo $result['item']['value'];
+    }
   }
 
   /**
@@ -66,8 +68,9 @@ class AzureCache extends \Controllers\Api\AzureTable
     ];
     $result = $this->execTable($tableName, $name, $data);
 
-    $this->cache->set("app-$$tableName-$name", $result, $ttl);
-
-    return $this->json($result);
+    if ($result['item']) {
+      $this->cache->set("app-$$tableName-$name", $result['item']['value'], $ttl);
+      echo $result['item']['value'];
+    }
   }
 }
