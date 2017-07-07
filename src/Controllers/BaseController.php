@@ -213,12 +213,8 @@ class BaseController
       'two' => $client->getAsync($req2['url'], $req2),
     ];
 
-    // Wait on all of the requests to complete. Throws a ConnectException
-    // if any of the requests fail
-    $results = Promise\unwrap($promises);
-
     // Wait for the requests to complete, even if some of them fail
-    $results = Promise\settle($promises)->wait();
+    $results = Promise\settle($promises)->wait(true);
     $rsp1    = $this->processJsonResult($results['one']['value']);
     $rsp2    = $this->processJsonResult($results['two']['value']);
     return [$rsp1, $rsp2];
