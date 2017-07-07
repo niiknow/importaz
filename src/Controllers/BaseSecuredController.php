@@ -7,7 +7,7 @@ class BaseSecuredController extends BaseController
   /**
    * Authenticate
    */
-  public function beforeRoutex()
+  public function beforeRoute()
   {
     if (!isset($_SERVER['HTTP_X_AUTH'])) {
       $this->f3->error('403', 'X-AUTH header is required');
