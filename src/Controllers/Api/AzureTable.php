@@ -113,12 +113,12 @@ class AzureTable extends \Controllers\BaseSecuredController
       $response = $this->doAzureTableQuery($tableName, $filter, $top, $select, $nextpk, $nextrk);
     }
 
-    $result               = $this->processQueryResponse($response, $errors);
+    $result               = $this->processAzureQueryResponse($response, $errors);
     $result['namePrefix'] = $tableRst['namePrefix'];
 
     if ($response['ptable']) {
       $errors2          = array();
-      $result['ptable'] = $this->processQueryResponse($response['ptable'], $errors2);
+      $result['ptable'] = $this->processAzureQueryResponse($response['ptable'], $errors2);
     }
 
     return $result;
