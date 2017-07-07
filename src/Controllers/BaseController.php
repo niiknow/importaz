@@ -161,6 +161,16 @@ class BaseController
 
   protected function processJsonResult($response)
   {
+    $rst = [
+      'raw_body' => null,
+      'code'     => 503,
+      'body'     => null,
+      'headers'  => array(),
+    ];
+    if (is_null($response)) {
+      return $rst;
+    }
+
     try {
       $rawBody = $response->getBody()->getContents();
       $result  = json_decode($rawBody);
@@ -171,12 +181,7 @@ class BaseController
     }
 
     if (is_null($response)) {
-      return [
-        'raw_body' => null,
-        'code'     => 503,
-        'body'     => null,
-        'headers'  => array(),
-      ];
+      return $rst;
     }
 
     return [
