@@ -443,18 +443,15 @@ class AzureTable extends \Controllers\BaseSecuredController
   public function tableRestProxy($tableName, &$errors)
   {
     $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
-    try {
-      // check cache
-      $cache = \Cache::instance();
-      if ($cache->exists('aztable-' . $tableName)) {
-        return $proxy;
-      }
 
-      // Create table if not exists.
-      $proxy->createTable($tableName);
-    } catch (\MicrosoftAzure\Storage\Common\Exceptions\ServiceException $e) {
-      $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
+    // check cache
+    $cache = \Cache::instance();
+    if ($cache->exists('aztable-' . $tableName)) {
+      return $proxy;
     }
+
+    // Create table if not exists.
+    @$proxy->createTable($tableName);
 
     $cache->set('aztable-' . $tableName, true, $this->getOrDefault('ttl.aztable', 600));
     return $proxy;
