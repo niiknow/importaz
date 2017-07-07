@@ -23,7 +23,7 @@ class AzureTable extends \Controllers\BaseSecuredController
     }
 
     $postData = ['items' => $items];
-    if ($notifyQueue != null) {
+    if (!is_null($notifyQueue)) {
       $postData['notifyQueue'] = $notifyQueue;
     }
 

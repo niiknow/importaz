@@ -335,7 +335,7 @@ class BaseController
 
     $rst = $this->doGetAzureJson($reqdata, $reqdata2);
     $rsp = $this->processAzureTableQuery($tableName, $rst[0]);
-    if ($reqdata['ptable']) {
+    if ($reqdata['ptable'] && !is_null($rst[1])) {
       $rsp['ptable'] = $this->processAzureTableQuery($reqdata['ptable'], $rst[1]);
     }
 

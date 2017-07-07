@@ -18,7 +18,7 @@ class Index extends BaseController
   public function hmac()
   {
     $apiUser = $this->getOrDefault('GET.user', null);
-    if ($apiUser == null) {
+    if (is_null($apiUser)) {
       echo 'OK';
       return;
     }
