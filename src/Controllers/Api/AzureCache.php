@@ -29,8 +29,8 @@ class AzureCache extends \Controllers\Api\AzureTable
     $errors                    = array();
     $tableRst                  = $this->getTableName($errors);
     $tableName                 = $tableRst['tableName'];
-    $result = null;
-    
+    $result                    = null;
+
     if ($this->cache->exists("app-$$tableName-$name", $result)) {
       return $this->json($result);
     }
@@ -66,8 +66,8 @@ class AzureCache extends \Controllers\Api\AzureTable
     ];
     $result = $this->execTable($tableName, $name, $data);
 
-    $this->cache->set("app-$$tableName-$name", $result , $ttl);
-    
+    $this->cache->set("app-$$tableName-$name", $result, $ttl);
+
     return $this->json($result);
   }
 }
