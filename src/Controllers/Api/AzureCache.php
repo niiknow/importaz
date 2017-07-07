@@ -69,7 +69,9 @@ class AzureCache extends \Controllers\Api\AzureTable
       'items' => [$postBody],
     ];
     $result = $this->execTable($tableName, $name, $data);
-    $this->cache->set("app-$$tableName-$name", $postBody['value'], $ttl);
+
+    // use low cache ttl here to provide better qos with azure origin
+    $this->cache->set("app-$$tableName-$name", $postBody['value'], 10);
     echo $postBody['value'];
   }
 }
