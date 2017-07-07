@@ -48,7 +48,13 @@ class AzureTable extends \Controllers\BaseSecuredController
     $this->json($result);
   }
 
-  protected function processQueryResponse($response, &$errors)
+  /**
+   * process query response from azure
+   * @param  [object] $response
+   * @param  [array]  &$errors
+   * @return [object]
+   */
+  protected function processAzureQueryResponse($response, &$errors)
   {
     if ($response->code > 200) {
       $errors[] = ['code' => $response->code, 'message' => "http error code"];
@@ -444,8 +450,7 @@ class AzureTable extends \Controllers\BaseSecuredController
     $proxy = ServicesBuilder::getInstance()->createTableService($this->connectionString);
 
     // check cache
-    $cache = \Cache::instance();
-    if ($cache->exists('aztable-' . $tableName)) {
+    if ($this->cache->exists('aztable-' . $tableName)) {
       return $proxy;
     }
 
@@ -454,7 +459,7 @@ class AzureTable extends \Controllers\BaseSecuredController
       $proxy->createTable($tableName);
     }
 
-    $cache->set('aztable-' . $tableName, true, $this->getOrDefault('ttl.aztable', 600));
+    $this->cache->set('aztable-' . $tableName, true, $this->getOrDefault('ttl.aztable', 7200));
     return $proxy;
   }
 

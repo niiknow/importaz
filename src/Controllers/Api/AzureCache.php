@@ -10,13 +10,6 @@ namespace Controllers\Api;
  */
 class AzureCache extends \Controllers\Api\AzureTable
 {
-
-  public function beforeRoute()
-  {
-    parent::beforeRoute();
-    $this->cache = \Cache::instance();
-  }
-
   /**
    * get cache by name
    */
@@ -37,7 +30,7 @@ class AzureCache extends \Controllers\Api\AzureTable
     }
 
     $result = $this->execQuery($query, 1);
-    
+
     if ($result['items'] && is_array($result['items']) && $result['items'][0]) {
       // use low cache ttl here to provide better qos with azure origin
       $this->cache->set("app-$$tableName-$name", $result['items'][0]->value, 2);

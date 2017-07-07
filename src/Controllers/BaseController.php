@@ -22,7 +22,9 @@ class BaseController
     $this->connectionString     = $f3->get('db.azstorage');
     $this->azDefaultPartition   = $f3->get('db.azdpart');
     $this->connectionStringData = array();
-    $parts                      = explode(";", $this->connectionString);
+    $this->cache                = \Cache::instance();
+
+    $parts = explode(";", $this->connectionString);
     foreach ($parts as &$part) {
       $iparts                                 = explode("=", $part);
       $this->connectionStringData[$iparts[0]] = $iparts[1];
@@ -159,6 +161,11 @@ class BaseController
     return $rst . '0';
   }
 
+  /**
+   * process json from ajax result
+   * @param  [object] $response
+   * @return [array]
+   */
   protected function processJsonResult($response)
   {
     $rst = [
