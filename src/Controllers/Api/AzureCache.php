@@ -10,6 +10,13 @@ namespace Controllers\Api;
  */
 class AzureCache extends \Controllers\Api\AzureTable
 {
+
+  public function beforeRoute()
+  {
+    parent::beforeRoute();
+    $this->cache = \Cache::instance();
+  }
+
   /**
    * get cache by name
    */
@@ -19,8 +26,16 @@ class AzureCache extends \Controllers\Api\AzureTable
     $name                      = $this->params['name'];
     $rowKey                    = (9007199254740991 - time()) . '';
     $query                     = "(PartitionKey eq '$name') and (RowKey le '$rowKey')";
+    $errors                    = array();
+    $tableRst                  = $this->getTableName($errors);
+    $tableName                 = $tableRst['tableName'];
+    $result = null;
+    
+    if ($this->cache->exists("app-$$tableName-$name", $result)) {
+      return $this->json($result);
+    }
 
-    $rst = $this->execQuery($query, 1);
+    $result = $this->execQuery($query, 1);
     return $this->json($result);
   }
 
@@ -50,6 +65,9 @@ class AzureCache extends \Controllers\Api\AzureTable
       'items' => [$postBody],
     ];
     $result = $this->execTable($tableName, $name, $data);
+
+    $this->cache->set("app-$$tableName-$name", $result , $ttl);
+    
     return $this->json($result);
   }
 }
