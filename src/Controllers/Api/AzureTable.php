@@ -451,7 +451,7 @@ class AzureTable extends \Controllers\BaseSecuredController
 
     if (!@$proxy->getTable($tableName)) // exception is thrown when getTable is called
     {
-      $proxy->createTable($table);
+      $proxy->createTable($tableName);
     }
 
     $cache->set('aztable-' . $tableName, true, $this->getOrDefault('ttl.aztable', 600));
