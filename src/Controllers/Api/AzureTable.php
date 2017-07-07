@@ -409,7 +409,6 @@ class AzureTable extends \Controllers\BaseSecuredController
         }
       } catch (\MicrosoftAzure\Storage\Common\Exceptions\ServiceException $e) {
         $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
-        $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
       }
     }
 
@@ -474,7 +473,6 @@ class AzureTable extends \Controllers\BaseSecuredController
       $proxy->createMessage($queueName, base64_encode($jobMessage));
 
     } catch (\MicrosoftAzure\Storage\Common\Exceptions\ServiceException $e) {
-      $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
       $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
     }
   }
