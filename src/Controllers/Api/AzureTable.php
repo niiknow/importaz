@@ -156,7 +156,12 @@ class AzureTable extends \Controllers\BaseSecuredController
     $actualTableName = $namePrefix . $tableName;
     $partitionKey    = $this->getOrDefault('GET.pk', $this->azDefaultPartition);
 
-    $result = ['tableName' => $actualTableName, 'partitionKey' => $partitionKey, 'namePrefix' => $namePrefix];
+    $result = [
+      'tableName'    => $actualTableName,
+      'partitionKey' => $partitionKey,
+      'namePrefix'   => $namePrefix,
+      'tenant'       => $tenant,
+    ];
     return $result;
   }
 

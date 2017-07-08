@@ -14,9 +14,10 @@ class AzureCache extends \Controllers\Api\AzureTable
   {
     $this->params['tableName'] = 'cache';
     $name                      = $this->params['name'];
-    $query                     = "PartitionKey eq '$name' and RowKey eq ''";
     $errors                    = array();
     $tableRst                  = $this->getTableName($errors);
+    $rowKey                    = $tableRst['tenant'];
+    $query                     = "PartitionKey eq '$name' and RowKey eq '$rowKey'";
     $tableName                 = $tableRst['tableName'];
     $result                    = null;
 
@@ -48,11 +49,11 @@ class AzureCache extends \Controllers\Api\AzureTable
 
     $this->params['tableName'] = 'cache';
     $name                      = $this->params['name'];
-    $ttl                       = $this->getOrDefault('GET.ttl', 3600);
-    $time                      = time();
-    $rowKey                    = '';
     $errors                    = array();
     $tableRst                  = $this->getTableName($errors);
+    $ttl                       = $this->getOrDefault('GET.ttl', 3600);
+    $time                      = time();
+    $rowKey                    = $tableRst['tenant'];
     $tableName                 = $tableRst['tableName'];
 
     $postBody = [
