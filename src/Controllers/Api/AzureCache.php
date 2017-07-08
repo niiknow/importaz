@@ -21,7 +21,7 @@ class AzureCache extends \Controllers\Api\AzureTable
     $tableName                 = $tableRst['tableName'];
     $result                    = null;
 
-    if ($this->cache->exists("app-$$tableName-$name", $result)) {
+    if ($this->cache->exists("ac-$$tableName-$name", $result)) {
       echo $result;
       return;
     }
@@ -35,7 +35,7 @@ class AzureCache extends \Controllers\Api\AzureTable
       }
 
       // use low cache ttl here to provide better qos with azure origin
-      $this->cache->set("app-$$tableName-$name", $obj->v, 2);
+      $this->cache->set("ac-$tableName-$name", $obj->v, 2);
       echo $obj->v;
       return;
     }
@@ -70,7 +70,7 @@ class AzureCache extends \Controllers\Api\AzureTable
     $result = $this->execTable($tableName, $name, $data);
 
     // use low cache ttl here to provide better qos with azure origin
-    $this->cache->set("app-$$tableName-$name", $postBody['v'], 2);
+    $this->cache->set("ac-$tableName-$name", $postBody['v'], 2);
     echo $postBody['v'];
   }
 }
