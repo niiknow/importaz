@@ -145,7 +145,7 @@ class BaseController
     $env = $this->getOrDefault('app.env', 'dev');
 
     // use 7 to prevent system table conflict
-    $rst = '7';
+    $rst = 'E7';
     if ($env == 'dev') {
       return $rst . '9';
     } elseif ($env == 'tst') {

@@ -58,7 +58,7 @@ class AzureCache extends \Controllers\Api\AzureTable
 
     $postBody = [
       'RowKey' => $rowKey,
-      'expAt'  => $time + $ttl,
+      'expAt'  => ($time + $ttl) . '',
       'v'      => $this->getOrDefault('GET.v', $this->f3->BODY),
       'ttl'    => $ttl . '',
       'ttlx'   => ($time + $ttl) . '', // unix expired time

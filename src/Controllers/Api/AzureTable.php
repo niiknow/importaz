@@ -152,7 +152,7 @@ class AzureTable extends \Controllers\BaseSecuredController
     $tenant          = $this->getTenantCode($errors);
     $env             = $this->envId();
     $tableName       = strtolower($params['tableName']);
-    $namePrefix      = strtolower($tenant . $env);
+    $namePrefix      = strtolower($tenant) . $env;
     $actualTableName = $namePrefix . $tableName;
     $partitionKey    = $this->getOrDefault('GET.pk', $this->azDefaultPartition);
 
@@ -285,7 +285,7 @@ class AzureTable extends \Controllers\BaseSecuredController
     // Create list of batch operation.
     $operations = new BatchOperations();
 
-    $nameRegex = "/^[a-z][a-z0-9]{2,62}$/";
+    $nameRegex = "/^[a-z][a-zA-Z0-9]{2,62}$/";
     // validate table name
     if (!preg_match($nameRegex, $tableName)) {
       $errors[] = ['message' => "invalid tableName '$tableName' value"];
@@ -463,9 +463,14 @@ class AzureTable extends \Controllers\BaseSecuredController
       return $proxy;
     }
 
-    if (!@$proxy->getTable($tableName)) // exception is thrown when getTable is called
-    {
-      $proxy->createTable($tableName);
+
+    $result = $this->doAzureTableQuery($tableName, '', 1, 'PartitionKey,RowKey');
+    if ($result->code != 200) {
+      try {
+        $proxy->createTable($tableName);
+      } catch (\MicrosoftAzure\Storage\Common\Exceptions\ServiceException $e) {
+        $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
+      }      
     }
 
     $this->cache->set('aztable-' . $tableName, true, $this->getOrDefault('ttl.aztable', 7200));
