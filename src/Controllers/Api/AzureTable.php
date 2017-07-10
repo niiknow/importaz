@@ -358,8 +358,8 @@ class AzureTable extends \Controllers\BaseSecuredController
               $errors[] = ['message' => "$i column name $key is invalid"];
               continue;
             }
-            if (is_numeric($value) && strpos($value . '', 'At') > 0) {
-              $entity->addProperty($key, EdmType::DATETIME, new \DateTime('@' . $value));
+            if (is_numeric($value) && strpos($key . '', 'At') > 0) {
+              $entity->addProperty($key, \MicrosoftAzure\Storage\Table\Models\EdmType::DATETIME, new \DateTime('@' . $value));
             } else {
               $entity->addProperty($key, null, $value);
             }
