@@ -463,9 +463,8 @@ class AzureTable extends \Controllers\BaseSecuredController
       return $proxy;
     }
 
-
     $result = $this->doAzureTableQuery($tableName, '', 1, 'PartitionKey,RowKey');
-    if ($result->code != 200) {
+    if ($result["code"] == 503) {
       try {
         $proxy->createTable($tableName);
       } catch (\MicrosoftAzure\Storage\Common\Exceptions\ServiceException $e) {

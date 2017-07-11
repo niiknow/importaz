@@ -255,8 +255,7 @@ class BaseController
     $rst = [
       'url'     => "https://$account.table.core.windows.net/$tableName",
       'account' => $account,
-      'headers' => $headers,
-      'ptable'  => 'test',
+      'headers' => $headers
     ];
 
     // detect if tablename has number at the end
