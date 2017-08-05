@@ -150,9 +150,9 @@ class AzureTable extends \Controllers\BaseSecuredController
     $f3              = $this->f3;
     $params          = $this->params;
     $tenant          = $this->getTenantCode($errors);
-    $env             = $this->envId();
+    $env             = $this->getOrDefault('app.env', 'prd');
     $tableName       = strtolower($params['tableName']);
-    $namePrefix      = strtolower($tenant) . $env;
+    $namePrefix      = strtolower($tenant) . strtoupper($env);
     $actualTableName = $namePrefix . $tableName;
     $partitionKey    = $this->getOrDefault('GET.pk', $this->azDefaultPartition);
 
@@ -469,7 +469,7 @@ class AzureTable extends \Controllers\BaseSecuredController
         $proxy->createTable($tableName);
       } catch (\MicrosoftAzure\Storage\Common\Exceptions\ServiceException $e) {
         $errors[] = ['message' => $e->getMessage(), 'code' => $e->getCode()];
-      }      
+      }
     }
 
     $this->cache->set('aztable-' . $tableName, true, $this->getOrDefault('ttl.aztable', 7200));

@@ -142,7 +142,7 @@ class BaseController
    */
   public function envId()
   {
-    $env = $this->getOrDefault('app.env', 'dev');
+    $env = $this->getOrDefault('app.env', 'prd');
 
     // use 7 to prevent system table conflict
     $rst = 'E7';
@@ -255,7 +255,7 @@ class BaseController
     $rst = [
       'url'     => "https://$account.table.core.windows.net/$tableName",
       'account' => $account,
-      'headers' => $headers
+      'headers' => $headers,
     ];
 
     // detect if tablename has number at the end
